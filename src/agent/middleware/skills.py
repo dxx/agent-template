@@ -311,7 +311,7 @@ def _resolve_path(file_path: str) -> str:
     elif re.search(r"^[a-zA-Z]+:", file_path):
         path = file_path
     else:
-        script_dir = Path(__file__).resolve().parent
-        path = str(script_dir) + "/" + file_path.removeprefix("./")
+        work_dir = Path.cwd()
+        path = str(work_dir) + "/" + file_path.removeprefix("./")
     return path
     
