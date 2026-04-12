@@ -90,7 +90,7 @@ async def chat_response(user_id: str, request: ChatRequest) -> AsyncIterable[Cha
                         if str(chunk["ns"]) == "()":
                             yield _render_interrupt(update[0])
     except Exception as e:
-        logger.error("Chat error, e=%s", str(e))
+        logger.error("Chat error, e=%s", str(e), exc_info=e)
         yield ChatResponse(
             msg_id=str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.ERROR,
