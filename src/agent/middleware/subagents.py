@@ -40,6 +40,10 @@ _TASK_SYSTEM_PROMPT = """
 - 当一个任务复杂且多步骤，并且可以单独完全委派时
 - 当一个任务独立于其他任务并且可以并行运行时
 - 当你只关心子代理的输出，而不关心中间步骤时
+
+**Task 工具重要使用说明:**
+- 尽量将任务并行化。在一个 tool_calls 中包含多个任务
+- 无论何时，只要步骤是独立的，就可以并行启动任务以更快的完成它们，为用户节省时间，这一点非常重要
 """
 
 _TASK_TOOL_DESCRIPTION = """
@@ -65,9 +69,7 @@ class SubAgent(ABC):
         self, user_input: str,
         runtime: ToolRuntime[Any, AgentState]
     ) -> str | Command:
-
-        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, [])
-
+        
         inputs = _validate_and_prepare_state(
             agent=self._agent, user_input=user_input, runtime=runtime
         )
@@ -78,11 +80,14 @@ class SubAgent(ABC):
         )
 
         (message_text, state_update) = _return_message_with_state_update(result)
+
+        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, None)
+        if sub_agent_calls != None:
+            # 存在 SUB_AGENT_CALLS_KEY 时进行更新
+            state_update[SUB_AGENT_CALLS_KEY] = [*sub_agent_calls, self.get_name()]
  
         return Command(update={
                 **state_update,
-                # 更新 sub_agent_calls
-                SUB_AGENT_CALLS_KEY: [*sub_agent_calls, self.get_name()],
                 "messages": [
                     # 返回工具消息
                     ToolMessage(
@@ -100,8 +105,6 @@ class SubAgent(ABC):
         runtime: ToolRuntime[Any, AgentState]
     ) -> str | Command:
 
-        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, [])
-
         inputs = _validate_and_prepare_state(
             agent=self._agent,user_input=user_input, runtime=runtime
         )
@@ -112,11 +115,14 @@ class SubAgent(ABC):
         )
 
         (message_text, state_update) = _return_message_with_state_update(result)
+
+        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, None)
+        if sub_agent_calls != None:
+            # 存在 SUB_AGENT_CALLS_KEY 时进行更新
+            state_update[SUB_AGENT_CALLS_KEY] = [*sub_agent_calls, self.get_name()]
  
         return Command(update={
                 **state_update,
-                # 更新 sub_agent_calls
-                SUB_AGENT_CALLS_KEY: [*sub_agent_calls, self.get_name()],
                 "messages": [
                     # 返回工具消息
                     ToolMessage(
