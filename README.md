@@ -241,16 +241,28 @@ GET /test/chat/stream?user_id=test_user&content=你好
 
 ## 环境配置
 
+项目提供三套环境配置示例文件：
+- `.env.example` - 默认配置
+- `.env.dev.example` - 开发环境配置示例
+- `.env.prod.example` - 生产环境配置示例
+
+### 环境变量说明
+
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `APP_ENV` | 环境（default/dev/prod） | default |
 | `APP_HOST` | 监听地址 | 127.0.0.1 |
 | `APP_PORT` | 监听端口 | 8000 |
-| `LOG_LEVEL` | 日志级别 | INFO |
-| `OPENAI_BASE_URL` | API 地址 | - (必填) |
+| `LOG_LEVEL` | 日志级别 (debug/info/warning/error) | info |
+| `LOG_HANDLERS` | 日志处理方式 (console/file) | ["console"] |
+| `LOG_FORMAT_TYPE` | 日志格式类型 (text/json) | text |
+| `LOG_FILE` | 日志文件路径 | logs/app.log |
+| `OPENAI_BASE_URL` | API 地址 | - |
 | `OPENAI_API_KEY` | API Key | - (必填) |
-| `OPENAI_MODEL` | 模型名称 | MiniMax-M2.7 |
+| `OPENAI_MODEL` | 模型名称 | gpt-4o-mini |
 | `OPENAI_TEMPERATURE` | 温度参数 | 0.7 |
+| `OPENAPI_URL` | Swagger 文档路径 (设为 "" 禁用) | - |
+| `POSTGRES_CHECKPOINTER_CONN_STR` | Postgres Checkpointer 连接字符串 | - |
+
 
 ## 对话流程
 
@@ -309,7 +321,7 @@ description: <技能简短描述>
 
 # 技能名称
 
-技能详细描述和指令，引用参考文件时使用绝对路径。
+技能详细描述和指令，引用参考文件。
 ```
 
 技能中间件会：
