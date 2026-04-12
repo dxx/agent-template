@@ -6,7 +6,7 @@
 
 - **Python**: 3.12+
 - **Web 框架**: FastAPI
-- **LLM 框架**: LangChain + LangGraph
+- **Agent 框架**: LangChain + LangGraph
 - **LLM**: OpenAI API (兼容)
 - **包管理**: uv
 - **服务器**: Uvicorn
