@@ -204,8 +204,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
         name=_TASK_TOOL_NAME,
         description=tool_description,
         func=task,
-        coroutine=atask,
-        parse_docstring=True
+        coroutine=atask
     )
 
 class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
