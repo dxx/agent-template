@@ -33,9 +33,9 @@ def create_async_postgres_checkpointer() -> Tuple[AsyncConnectionPool, AsyncPost
     )
 
     # 在异步块中执行
-    # await connt_pool.open()
+    # await conn_pool.open()
 
-    # 初始化 AsyncPostgresSaver
+    # 创建 AsyncPostgresSaver
     checkpointer = AsyncPostgresSaver(conn=conn_pool)
 
     # 在 PostgreSQL 中自动创建相关表
@@ -58,7 +58,7 @@ def create_postgres_checkpointer() -> PostgresSaver:
         }
     )
 
-    # 初始化 PostgresSaver
+    # 创建 PostgresSaver
     checkpointer = PostgresSaver(conn=conn_pool)
 
     # 在 PostgreSQL 中自动创建相关表
