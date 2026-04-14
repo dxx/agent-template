@@ -51,7 +51,11 @@ def create_postgres_checkpointer() -> PostgresSaver:
     # 注意：生产环境建议配置好 min_size, max_size 等参数
     conn_pool = ConnectionPool(
         CONNECTION_STRING,
-        open=True  # 立即打开连接
+        open=True,  # 立即打开连接
+        kwargs={
+            "autocommit": True,
+            "row_factory": dict_row
+        }
     )
 
     # 初始化 PostgresSaver
