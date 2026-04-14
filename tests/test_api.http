@@ -36,3 +36,13 @@ Cookie: session_id=1
     ]
   }
 }
+
+### 访问 User agent
+POST http://localhost:8000/chat/stream
+Content-Type: application/json
+Connection: keep-alive
+Cookie: session_id=1
+
+{
+  "content": "我叫 Alice，我的邮箱是 alice@example.com，爱好学习、写代码"
+}

@@ -15,10 +15,10 @@ settiongs = get_settings()
 # 配置在配置文件中
 # CONNECTION_STRING = "postgresql://postgres:postgres@localhost:5432/langchain"
 
-CONNECTION_STRING = settiongs.postgres_checkpointer_conn_str
+CONNECTION_STRING = settiongs.postgres_memory_conn_str
 
 def create_async_postgres_checkpointer() -> Tuple[AsyncConnectionPool, AsyncPostgresSaver]:
-    """创建异步的 postgres checkpointer"""
+    """创建异步的 Postgres checkpointer"""
     # 创建连接池
     # 注意：生产环境建议配置好 min_size, max_size 等参数
     conn_pool = AsyncConnectionPool(
@@ -46,7 +46,7 @@ def create_async_postgres_checkpointer() -> Tuple[AsyncConnectionPool, AsyncPost
 
 
 def create_postgres_checkpointer() -> PostgresSaver:
-    """创建同步的 postgres checkpointer"""
+    """创建同步的 Postgres checkpointer"""
     # 创建连接池
     # 注意：生产环境建议配置好 min_size, max_size 等参数
     conn_pool = ConnectionPool(
@@ -66,13 +66,38 @@ def create_postgres_checkpointer() -> PostgresSaver:
 
     # 定义清理函数
     def cleanup():
-        logger.info("正在关闭 Postgres 连接池...")
+        logger.info("正在关闭 Postgres checkpointer 连接池...")
           # 关闭池中所有连接
         conn_pool.close()
-        logger.info("Postgres 连接池已关闭...")
+        logger.info("Postgres checkpointer 连接池已关闭...")
 
     # 注册退出处理器
     # 确保程序正常退出或被信号中断时都能执行清理
     atexit.register(cleanup)
 
     return checkpointer
+
+# 创建全局的 connection pool 和 checkpointer
+async_postgres_conn_pool, async_postgres_checkpointer = create_async_postgres_checkpointer()
+
+async def init_postgres_checkpointer():
+    """初始化 Postgres checkpointer"""
+    try:
+        # 打开 PostgreSQL 连接
+        await async_postgres_conn_pool.open(wait=True, timeout=10)
+        # 在 PostgreSQL 中自动创建相关表
+        await async_postgres_checkpointer.setup()
+        logger.info("Postgre checkpointer 初始化完成...")
+    except Exception as e:
+        logger.error("Postgre checkpointer 连接失败", e)
+        await close_postgres_checkpointer()
+
+async def close_postgres_checkpointer():
+    """关闭 Postgres checkpointer"""
+    try:
+        logger.info("正在关闭 Postgres checkpointer 连接池...")
+        # 关闭池中所有连接
+        await async_postgres_conn_pool.close()
+        logger.info("Postgres checkpointer 连接池已关闭...")
+    except Exception as e:
+        logger.error("Postgres checkpointer 连接池关闭失败", e)

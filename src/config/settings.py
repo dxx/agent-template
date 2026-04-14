@@ -44,7 +44,7 @@ class Settings(BaseSettings):
         default=0.7, validation_alias="OPENAI_TEMPERATURE"
     )
 
-    postgres_checkpointer_conn_str: str = Field(validation_alias="POSTGRES_CHECKPOINTER_CONN_STR")
+    postgres_memory_conn_str: str = Field(validation_alias="POSTGRES_MEMORY_CONN_STR")
 
     model_config = SettingsConfigDict(
         env_file=env_path,

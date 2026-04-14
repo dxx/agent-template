@@ -3,6 +3,7 @@ from datetime import datetime
 from langchain.tools import ToolRuntime
 
 from agent.memory import AppAgentContext, AppAgentState
+from agent.tools.user import namespace
 
 _USER_INFO = {
     "1": {
@@ -20,9 +21,21 @@ def greet(runtime: ToolRuntime[AppAgentContext, AppAgentState]) -> str:
     print(f"context={runtime.context}")
     sub_agent_calls = runtime.state.get("sub_agent_calls", [])
     print(f"sub_agent_calls={sub_agent_calls}")
+    print(f"store={runtime.store}")
 
-    user_info = _USER_INFO.get(runtime.context.user_id, {})
-    user_name = user_info.get("name", "")
+    user_id = runtime.context.user_id
+    user_name = ""
+    if runtime.store:
+        # 从 Store 中获取信息
+        item = runtime.store.get(namespace, user_id)
+        if item and item.value:
+            user_info = item.value
+            print(f"user_info={user_info}")
+            user_name = user_info["name"]
+    if not user_name:
+        user_info = _USER_INFO.get(user_id, {})
+        user_name = user_info.get("name", "")
+
     
     hour = datetime.now().hour
     if 5 <= hour < 12:

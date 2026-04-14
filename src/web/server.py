@@ -10,7 +10,10 @@ from exception import SystemException
 from log import get_logger
 from config.settings import get_settings
 from utils import json_util
-from agent.memory import init_postgres_checkpointer, close_postgres_checkpointer
+from agent.memory import (
+    init_postgres_checkpointer, close_postgres_checkpointer,
+    init_postgres_store, close_postgres_store
+)
 
 logger = get_logger(__name__)
 
@@ -27,8 +30,11 @@ async def lifespan(app: FastAPI):
         "app_env=%s", settings.app_env
     )
 
-    # 使用 Postgres Checkpointer 时打开
+    # 使用 Postgres checkpointer 时打开
     # await init_postgres_checkpointer()
+
+    # 使用 Postgres store 时打开
+    # await init_postgres_store()
 
     # ====== 上面进入上下文，__aenter__ ======
     yield
@@ -36,8 +42,11 @@ async def lifespan(app: FastAPI):
 
     logger.info("Application shutdown...")
     
-    # 使用 Postgres Checkpointer 时打开
+    # 使用 Postgres checkpointer 时打开
     # await close_postgres_checkpointer()
+
+    # 使用 Postgres Store 时打开
+    # await close_postgres_store()
 
 
 app = FastAPI(

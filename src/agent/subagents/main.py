@@ -1,5 +1,6 @@
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.store.memory import InMemoryStore
 
 from agent.llm import create_chat_model
 from agent.prompts import AGENT_MAIN_PROMPT
@@ -12,13 +13,15 @@ from agent.middleware import (
 from agent.memory import (
     AppAgentContext,
     AppAgentState,
-    async_postgres_checkpointer
+    async_postgres_checkpointer,
+    async_postgres_store,
 )
 from agent.subagents.file_manager import FileManagerAgent
 from agent.subagents.research import ReseachAgent
 from agent.subagents.writing import WritingAgent
 from agent.subagents.review import ReviewAgent
 from agent.subagents.greet import GreetAgent
+from agent.subagents.user import UserAgent
 
 def create_main_agent():
     """创建主 Agent"""
@@ -32,7 +35,8 @@ def create_main_agent():
         ReseachAgent(),
         WritingAgent(),
         ReviewAgent(),
-        GreetAgent()
+        GreetAgent(),
+        UserAgent(),
     ]
 
     return create_agent(
@@ -44,6 +48,9 @@ def create_main_agent():
         # 生产环境使用 async_postgres_checkpointer, 然后在 web/server.py 中初始化
         # checkpointer=async_postgres_checkpointer,
         checkpointer=InMemorySaver(),
+        # 生产环境使用 async_postgres_store, 然后在 web/server.py 中初始化
+        # store=async_postgres_store,
+        store=InMemoryStore(),
         middleware=[
             SubAgentMiddleware(
                 sub_agents=sub_agents
