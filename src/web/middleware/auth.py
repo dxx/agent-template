@@ -15,10 +15,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.url.path in PUBLIC_PATHS:
             return await call_next(request)
 
-        session_id = request.cookies.get("session_id")
+        user_token = request.headers.get("user-token")
         chat_id = request.headers.get("chat-id")
 
-        if not session_id:
+        if not user_token:
             logger.warning(
                 "Unauthorized access attempt, path=%s", request.url.path
             )
@@ -31,7 +31,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             )
         
         request.state.app_state = AppState(
-            user_id=session_id,
+            user_id=user_token, # 假设已经通过 user-token 获取到 user_id
             chat_id=chat_id
         )
 
