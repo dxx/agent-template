@@ -6,12 +6,15 @@ from langgraph.store.base import BaseStore
 from agent.memory.postgres_checkpointer import async_postgres_checkpointer
 from agent.memory.postgres_store import async_postgres_store
 
+_memory_checkpointer = InMemorySaver()
+_memory_store = InMemoryStore()
+
 def get_checkpointer() -> BaseCheckpointSaver:
     # 生产环境使用 async_postgres_checkpointer, 然后在 web/server.py 中初始化
     # return async_postgres_checkpointer,
-    return InMemorySaver()
+    return _memory_checkpointer
 
 def get_store() -> BaseStore:
     # 生产环境使用 async_postgres_store, 然后在 web/server.py 中初始化
     # return async_postgres_store
-    return InMemoryStore()
+    return _memory_store
