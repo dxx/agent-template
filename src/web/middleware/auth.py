@@ -16,6 +16,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         session_id = request.cookies.get("session_id")
+        chat_id = request.headers.get("chat-id")
 
         if not session_id:
             logger.warning(
@@ -30,7 +31,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
             )
         
         request.state.app_state = AppState(
-            user_id=session_id
+            user_id=session_id,
+            chat_id=chat_id
         )
 
         response = await call_next(request)

@@ -3,6 +3,8 @@ POST http://localhost:8000/chat/stream
 Content-Type: application/json
 Connection: keep-alive
 Cookie: session_id=1
+# 指定对话 id，如果不指定服务端默认生成一个 chat-id 响应头
+chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
 
 {
   "content": "你今天吃饭了吗。请使用 greet 技能回复"

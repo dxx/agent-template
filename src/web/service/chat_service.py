@@ -8,6 +8,7 @@ from agent.subagents import create_main_agent
 from agent.memory import AppAgentContext, AppAgentState
 from log import get_logger
 from web.schemas import (
+    AppState,
     ChatRequest,
     ChatResponse,
     ResponseMsgTypeEnum,
@@ -16,6 +17,7 @@ from web.schemas import (
     Decision
 )
 from config import AppEnv, get_settings
+from web.session import format_thread_id
 
 logger = get_logger(__name__)
 
@@ -24,7 +26,7 @@ settiongs = get_settings()
 # 创建 main_agent
 main_agent = create_main_agent()
 
-async def chat_response(user_id: str, request: ChatRequest) -> AsyncIterable[ChatResponse[str]]:
+async def chat_response(app_state: AppState, request: ChatRequest) -> AsyncIterable[ChatResponse[str]]:
     content = request.content
     decision = request.decision
 
@@ -36,8 +38,10 @@ async def chat_response(user_id: str, request: ChatRequest) -> AsyncIterable[Cha
         **state
     }
 
-    config = {"configurable": {"thread_id": user_id}}
-    context = AppAgentContext(user_id=user_id)
+    thread_id = format_thread_id(app_state.chat_id, app_state.user_id)
+    print(f"thread_id======{thread_id}")
+    config = {"configurable": {"thread_id": thread_id}}
+    context = AppAgentContext(user_id=app_state.user_id)
 
     resume = _resume(decision)
 

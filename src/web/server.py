@@ -4,7 +4,7 @@ from fastapi.responses import PlainTextResponse
 from fastapi.exceptions import StarletteHTTPException, RequestValidationError
 
 from web.api.routes import router
-from web.middleware import AuthMiddleware
+from web.middleware import ChatMiddleware, AuthMiddleware
 from web.schemas import ApiResult, CODE_ERROR, CODE_HTTP_ERROR, CODE_VALIDATION_ERROR
 from exception import SystemException
 from log import get_logger
@@ -123,5 +123,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 app.add_middleware(AuthMiddleware)
+
+app.add_middleware(ChatMiddleware)
 
 app.include_router(router)

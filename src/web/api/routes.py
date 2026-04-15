@@ -16,25 +16,32 @@ async def chat(
     request: Request,
     chat_request: Annotated[ChatRequest, Body(description="对话请求参数")],
 ) -> AsyncIterable[ServerSentEvent]:
-    
+    """流式对话接口"""
+
     app_state: AppState  = getattr(request.state, "app_state")
 
-    async for response in chat_response(app_state.user_id, chat_request):
+    async for response in chat_response(app_state, chat_request):
         yield ServerSentEvent(data=response)
 
 
 @router.get("/test/chat/stream", response_class=EventSourceResponse)
 async def test_chat(
     user_id: Annotated[str, Query(description="用户id")],
+    chat_id: Annotated[str, Query(description="对话id")],
     content: Annotated[str, Query(description="对话请求内容")],
 ) -> AsyncIterable[ServerSentEvent]:
+    """测试对话接口"""
+
+    app_sate = AppState(
+        user_id, chat_id
+    )
     
     chat_request = ChatRequest(
         msg_type="NORMAL",
         content=content
     )
 
-    async for response in chat_response(user_id, chat_request):
+    async for response in chat_response(app_sate, chat_request):
         yield ServerSentEvent(data=response)
 
 
