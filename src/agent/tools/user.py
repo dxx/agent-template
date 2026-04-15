@@ -14,21 +14,24 @@ class UserInfo(BaseModel):
 namespace = ("user",)
 
 @tool
-def save_user_info(user_info: UserInfo, runtime: ToolRuntime[AppAgentContext, AppAgentState]) -> str:
+async def save_user_info(user_info: UserInfo, runtime: ToolRuntime[AppAgentContext, AppAgentState]) -> str:
     """保存用户信息"""
     store = runtime.store
     user_id = runtime.context.user_id
     # 保存数据，数据类型为字典 (namespace, key, data)
-    store.put(namespace, user_id, user_info.model_dump())
+    await store.aput(namespace, user_id, user_info.model_dump())
     return "保存用户信息成功"
 
 @tool
-def get_user_info(runtime: ToolRuntime[AppAgentContext, AppAgentState]) -> str:
+async def get_user_info(runtime: ToolRuntime[AppAgentContext, AppAgentState]) -> str:
     """获取用户信息"""
     store = runtime.store
     user_id = runtime.context.user_id
-    item = store.get(namespace, user_id)
-    user_info = item.value
-    # 字典类型
-    print(type(user_info))
-    return str(user_info)
+    item = await store.aget(namespace, user_id)
+    if item and item.value:
+        user_info = item.value
+        # 字典类型
+        print(type(user_info))
+        return str(user_info)
+    
+    return "未获取到用户信息"

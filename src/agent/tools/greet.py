@@ -15,7 +15,7 @@ _USER_INFO = {
 }
 
 @tool
-def greet(runtime: ToolRuntime[AppAgentContext, AppAgentState]) -> str:
+async def greet(runtime: ToolRuntime[AppAgentContext, AppAgentState]) -> str:
     """根据当前时间段和用户进行打招呼"""
 
     print(f"context={runtime.context}")
@@ -27,7 +27,7 @@ def greet(runtime: ToolRuntime[AppAgentContext, AppAgentState]) -> str:
     user_name = ""
     if runtime.store:
         # 从 Store 中获取信息
-        item = runtime.store.get(namespace, user_id)
+        item = await runtime.store.aget(namespace, user_id)
         if item and item.value:
             user_info = item.value
             print(f"user_info={user_info}")
