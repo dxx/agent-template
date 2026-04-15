@@ -27,9 +27,10 @@ agent-template/
 │   │   │   ├── writing.py      # 写作代理
 │   │   │   ├── review.py       # 审核代理
 │   │   │   ├── greet.py        # 问候代理
+│   │   │   ├── user.py         # 用户代理
 │   │   │   └── agent_enum.py   # 子代理枚举
 │   │   ├── hitl/               # 人工介入模块
-│   │   │   └── approve.py     # 审批内容生成
+│   │   │   └── approve.py      # 审批内容生成
 │   │   ├── llm/                # LLM 模型封装
 │   │   │   └── model.py
 │   │   ├── middleware/         # 中间件
@@ -40,11 +41,14 @@ agent-template/
 │   │   ├── memory/             # 状态管理
 │   │   │   ├── state.py        # Agent 状态定义
 │   │   │   ├── context.py      # Agent 上下文定义
-│   │   │   └── postgres_checkpointer.py  # Postgres 持久化
+│   │   │   ├── postgres_checkpointer.py  # Postgres Checkpointer
+│   │   │   └── postgres_store.py         # Postgres Store
 │   │   ├── prompts/            # 提示词
 │   │   │   └── agent_prompts.py
 │   │   └── tools/              # 工具函数
-│   │       └── file.py
+│   │       ├── file.py
+│   │       ├── greet.py
+│   │       └── user.py
 │   ├── web/                    # Web 服务
 │   │   ├── server.py           # FastAPI 应用
 │   │   ├── api/routes.py       # API 路由
@@ -64,13 +68,18 @@ agent-template/
 │   │   └── json_util.py
 │   ├── exception/              # 异常定义
 │   │   └── sys.py              # 系统异常
-│   └── hitl/                    # 人工介入模块
-│       └── approve.py          # 审批内容生成
+│   └── skills/                 # 技能目录
+│       └── greet/              # 示例技能
+│           ├── SKILL.md
+│           └── references/
+├── tests/
+│   └── test_api.http           # API 测试文件
 ├── pyproject.toml              # 项目配置
 ├── .env.example                # 环境变量示例
 ├── .env.dev.example            # 开发环境变量示例
 ├── .env.prod.example           # 生产环境变量示例
-└── test_api.http               # API 测试文件
+├── LICENSE
+└── README.md
 ```
 
 ## 核心模块
@@ -82,14 +91,18 @@ agent-template/
 **状态与持久化** (`agent/memory/`):
 - `AppAgentContext`: 用户上下文，包含 `user_id`
 - `AppAgentState`: Agent 状态，继承自 `AgentState`，包含 `sub_agent_calls` 记录调用的子代理
-- 全局 `async_postgres_checkpointer`: PostgreSQL 检查点，支持会话恢复
-- `init_postgres_checkpointer()` / `close_postgres_checkpointer()`: 初始化和关闭连接池
+- `async_postgres_checkpointer`: PostgreSQL 检查点，支持会话恢复
+- `async_postgres_store`: PostgreSQL 存储，用于持久化数据
+- `init_postgres_checkpointer()` / `close_postgres_checkpointer()`: 初始化和关闭 Checkpointer 连接池
+- `init_postgres_store()` / `close_postgres_store()`: 初始化和关闭 Store 连接池
+- 默认使用内存存储 (`InMemorySaver` 和 `InMemoryStore`)，生产环境可切换为 PostgreSQL
 
 **中间件系统**:
 
 | 中间件 | 功能 |
 |--------|------|
 | `SubAgentMiddleware` | 子代理调度，通过 `task` 工具分发任务给子代理 |
+| `SkillsMiddleware` | 技能系统支持，动态加载 `skills/` 目录下的技能 |
 | `SystemTimeMiddleware` | 动态注入系统当前时间到提示词，帮助 Agent 准确回答时间相关问题 |
 | `SummarizationMiddleware` | 消息超过20条或token超过10000时自动摘要 |
 | `ToolCallingCheckMiddleware` | 检查工具调用是否正确执行，补充缺失的 ToolMessage |
@@ -104,6 +117,7 @@ agent-template/
 | `WritingAgent` | 撰写高质量内容 |
 | `ReviewAgent` | 审核文本并提供改进建议 |
 | `GreetAgent` | 处理问候和基础交互 |
+| `UserAgent` | 用户相关操作代理 |
 
 **人工介入模块** (`hitl/`):
 - `approve.py`: 审批内容生成，将工具调用转换为用户可读的审批信息
@@ -115,7 +129,6 @@ agent-template/
 **状态管理** (`memory/`):
 - `AppAgentState`: Agent 运行状态，包含消息历史和子代理调用记录
 - `AppAgentContext`: Agent 运行时上下文，包含用户信息
-- 支持 Postgres 持久化 (`create_async_postgres_checkpointer`)
 
 ### Web 模块 (`src/web/`)
 
@@ -255,13 +268,13 @@ GET /test/chat/stream?user_id=test_user&content=你好
 | `LOG_LEVEL` | 日志级别 (debug/info/warning/error) | info |
 | `LOG_HANDLERS` | 日志处理方式 (console/file) | ["console"] |
 | `LOG_FORMAT_TYPE` | 日志格式类型 (text/json) | text |
-| `LOG_FILE` | 日志文件路径 | logs/app.log |
-| `OPENAI_BASE_URL` | API 地址 | - |
+| `LOG_FILE` | 日志文件路径 | app.log |
+| `OPENAI_BASE_URL` | API 地址 | - (必填) |
 | `OPENAI_API_KEY` | API Key | - (必填) |
-| `OPENAI_MODEL` | 模型名称 | gpt-4o-mini |
+| `OPENAI_MODEL` | 模型名称 | - (必填) |
 | `OPENAI_TEMPERATURE` | 温度参数 | 0.7 |
-| `OPENAPI_URL` | Swagger 文档路径 (设为 "" 禁用) | - |
-| `POSTGRES_CHECKPOINTER_CONN_STR` | Postgres Checkpointer 连接字符串 | - |
+| `OPENAPI_URL` | Swagger 文档路径 (设为 "" 禁用) | /openapi.json |
+| `POSTGRES_MEMORY_CONN_STR` | Postgres 连接字符串（用于 checkpointer 和 store） | - |
 
 
 ## 对话流程
