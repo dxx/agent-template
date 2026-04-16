@@ -162,7 +162,7 @@ agent-template/
 | `/message/all` | DELETE | 删除用户所有对话 |
 
 **中间件** (`middleware/`):
-- `AuthMiddleware`: 基于 session_id 的 Cookie 认证，公开路径白名单: `/docs`, `/openapi.json`, `/health`, `/test/chat/stream`
+- `AuthMiddleware`: 基于请求头认证，公开路径白名单: `/docs`, `/openapi.json`, `/health`, `/test/chat/stream`
 - `ChatMiddleware`: 对话状态中间件，从请求中提取 `user_id` 和 `chat_id` 构建应用状态
 
 ### API 数据模型
