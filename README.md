@@ -34,11 +34,14 @@ agent-template/
 │   │   ├── llm/                # LLM 模型封装
 │   │   │   └── model.py
 │   │   ├── middleware/         # 中间件
-│   │   │   ├── skills.py       # Skills 支持
-│   │   │   ├── subagents.py    # 子代理支持
+│   │   │   ├── __init__.py     # 中间件导出
 │   │   │   ├── system_time.py  # 系统时间注入
-│   │   │   └── tool_calling_check.py # 工具调用检查
+│   │   │   └── prebuild/       # 预构建中间件
+│   │   │       ├── skills.py   # Skills 支持
+│   │   │       ├── subagents.py # 子代理支持
+│   │   │       └── tool_calling_check.py # 工具调用检查
 │   │   ├── memory/             # 状态管理
+│   │   │   ├── entry.py        # Checkpointer/Store 入口
 │   │   │   ├── state.py        # Agent 状态定义
 │   │   │   ├── context.py      # Agent 上下文定义
 │   │   │   ├── postgres_checkpointer.py  # Postgres Checkpointer
@@ -82,12 +85,15 @@ agent-template/
 │       └── greet/              # 示例技能
 │           ├── SKILL.md
 │           └── references/
+│               └── greet.md
 ├── tests/
-│   └── test_api.http           # API 测试文件
+│   ├── chat_api.http           # 对话 API 测试文件
+│   └── message_api.http        # 消息 API 测试文件
 ├── pyproject.toml              # 项目配置
 ├── .env.example                # 环境变量示例
 ├── .env.dev.example            # 开发环境变量示例
 ├── .env.prod.example           # 生产环境变量示例
+├── .python-version             # Python 版本
 ├── LICENSE
 └── README.md
 ```
@@ -99,6 +105,9 @@ agent-template/
 **主 Agent** - 通过 `create_main_agent()` 创建（位于 `subagents/main.py`），负责整体对话协调，通过 `task` 工具调度子代理。
 
 **状态与持久化** (`agent/memory/`):
+- `entry.py`: Checkpointer 和 Store 的统一入口
+  - `get_checkpointer()`: 获取当前 checkpointer（默认内存存储）
+  - `get_store()`: 获取当前 store（默认内存存储）
 - `AppAgentContext`: 用户上下文，包含 `user_id`
 - `AppAgentState`: Agent 状态，继承自 `AgentState`，包含 `sub_agent_calls` 记录调用的子代理
 - `async_postgres_checkpointer`: PostgreSQL 检查点，支持会话恢复
@@ -266,6 +275,10 @@ uv run src/main.py
 ```
 GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 ```
+
+项目提供了完整的 HTTP 测试文件：
+- `tests/chat_api.http` - 对话 API 测试
+- `tests/message_api.http` - 消息管理 API 测试
 
 ## 环境配置
 
