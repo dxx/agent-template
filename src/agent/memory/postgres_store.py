@@ -36,7 +36,7 @@ def create_async_postgres_store() -> Tuple[AsyncConnectionPool, AsyncPostgresSto
     # await conn_pool.open()
 
     # 创建 AsyncPostgresStore
-    store = AsyncPostgresStore(conn=conn_pool) # type: ignore[ag-]
+    store = AsyncPostgresStore(conn=conn_pool) # type: ignore[arg-type]
 
     # 在 PostgreSQL 中自动创建相关表
     # 在异步块中执行
