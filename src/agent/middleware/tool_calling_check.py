@@ -51,7 +51,7 @@ class ToolCallingCheckMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         }
     
     @override
-    async def aabefore_model(
+    async def abefore_model(
         self, state: AgentState[Any], runtime: Runtime[ContextT]
     ) -> dict[str, Any] | None:
         return self.before_model(state, runtime)

@@ -1,7 +1,9 @@
 """Skills 技能中间件。支持 skills 系统"""
 import re
 import yaml
-from typing import Any, TypedDict, override
+from pathlib import Path
+from collections.abc import Awaitable
+from typing import Any, TypedDict, override, Callable
 from langchain.tools import BaseTool
 from langchain_core.tools import StructuredTool
 from langchain.tools.tool_node import ToolCallRequest
@@ -10,8 +12,13 @@ from langchain.agents.middleware import (
 )
 from langchain.messages import SystemMessage, AIMessage, ToolMessage
 from langgraph.types import Command
-from typing import Callable
-from pathlib import Path
+from langchain.agents.middleware.types import (
+    AgentMiddleware,
+    AgentState,
+    ContextT,
+    ResponseT,
+    StateT,
+)
 
 from log import get_logger
 
@@ -49,12 +56,12 @@ class Skill(TypedDict):
     content: str
     path: str
 
-class SkillsMiddleware(AgentMiddleware):
+class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
     """技能中间件。向系统提示词中注入技能描述"""
 
     def __init__(
             self, dirs: list[str],
-            grouped_tools: dict[str, BaseTool] = {}
+            grouped_tools: dict[str, list[BaseTool]] = {}
         ):
         """初始化和生成技能提示词
 
@@ -90,9 +97,9 @@ class SkillsMiddleware(AgentMiddleware):
     @override
     def wrap_model_call(
         self,
-        request: ModelRequest,
-        handler: Callable[[ModelRequest], ModelResponse]
-    ) -> ModelResponse:
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], ModelResponse[ResponseT]]
+    ) -> ModelResponse[ResponseT]:
 
         if not self.skills:
             return handler(request)
@@ -105,9 +112,9 @@ class SkillsMiddleware(AgentMiddleware):
     @override
     async def awrap_model_call(
         self,
-        request: ModelRequest,
-        handler: Callable[[ModelRequest], ModelResponse]
-    ) -> ModelResponse:
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], Awaitable[ModelResponse[ResponseT]]]
+    ) -> ModelResponse[ResponseT]:
         
         if not self.skills:
             return await handler(request)
@@ -130,12 +137,16 @@ class SkillsMiddleware(AgentMiddleware):
     async def awrap_tool_call(
         self,
         request: ToolCallRequest,
-        handler: Callable[[ToolCallRequest], ToolMessage | Command[Any]],
+        handler: Callable[[ToolCallRequest], Awaitable[ToolMessage | Command[Any]]],
     ) -> ToolMessage | Command[Any]:
         override_request = self._build_overridden_tool_request(request)
         return await handler(override_request)
 
-    def _build_overridden_request(self, request: ModelRequest, skill_names: list[str]) -> ModelRequest:
+    def _build_overridden_request(
+        self,
+        request: ModelRequest[ContextT],
+        skill_names: list[str]
+    ) -> ModelRequest[ContextT]:
         # 添加到系统消息中
         new_content = list(request.system_message.content_blocks if request.system_message else []) + [
             {"type": "text", "text": "\n\n" + self.skills_prompt}
@@ -148,7 +159,7 @@ class SkillsMiddleware(AgentMiddleware):
             # 添加 skill 需要的工具，动态加载的工具需要在 wrap_tool_call 指定执行
             new_tools.extend(skill_tools)
 
-        new_system_message = SystemMessage(content=new_content)
+        new_system_message = SystemMessage(content_blocks=new_content)
 
         override_reqeust = request.override(
             # 修改系统提示词

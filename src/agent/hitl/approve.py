@@ -1,10 +1,11 @@
 from typing import Any
 from langchain_core.messages import ToolCall, SystemMessage, HumanMessage
-from langgraph.runtime import Runtime
+from langchain.agents.middleware.human_in_the_loop import DecisionType
 from langchain.agents.middleware.types import (
     AgentState,
     ContextT,
 )
+from langgraph.runtime import Runtime
 
 from agent.llm import create_chat_model
 
@@ -24,7 +25,7 @@ user_prompt = """
 记住：不要给用户出选择，不要询问用户审批
 """
 
-default_allowed_decisions = ["approve", "reject"]
+default_allowed_decisions: list[DecisionType] = ["approve", "reject"]
 
 def default_descript_callable(
     tool_call: ToolCall,
@@ -40,5 +41,5 @@ def default_descript_callable(
         ]
     )
 
-    return ai_message.content
+    return ai_message.text
     

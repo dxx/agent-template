@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any
 
 
-def to_json[T](obj: T) -> str:
+def to_json(obj: Any) -> str:
     return json.dumps(obj, ensure_ascii=False, indent=2, default=_default)
 
 
@@ -12,7 +12,7 @@ def from_json(json_str: str) -> Any:
     return json.loads(json_str, object_hook=_object_hook)
 
 
-def _default[T](obj: T) -> T:
+def _default(obj: Any) -> Any:
     if isinstance(obj, Enum):
         return obj.value
     if isinstance(obj, datetime):

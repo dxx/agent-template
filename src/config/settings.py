@@ -26,7 +26,7 @@ path = Path(__file__).resolve().parent.parent.parent
 env_path = path.joinpath(env_file)
 
 class Settings(BaseSettings):
-    app_env: str = APP_ENV
+    app_env: str
     app_host: str = Field(default="127.0.0.1", validation_alias="APP_HOST")
     app_port: int = Field(default=8000, validation_alias="APP_PORT")
 
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings(app_env=APP_ENV) # type: ignore[call-issue]
 
 
 def reload_settings() -> Settings:

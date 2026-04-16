@@ -1,8 +1,15 @@
+from collections.abc import Awaitable
 from datetime import datetime
 from typing import Callable, override
-
 from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
 from langchain.messages import SystemMessage
+from langchain.agents.middleware.types import (
+    AgentMiddleware,
+    AgentState,
+    ContextT,
+    ResponseT,
+    StateT,
+)
 
 _SYSTEM_TIME_PROMPT = """
 **当前系统时间:**
@@ -14,19 +21,23 @@ _SYSTEM_TIME_PROMPT = """
 """
 
 
-class SystemTimeMiddleware(AgentMiddleware):
+class SystemTimeMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
     """动态注入系统当前时间到系统提示词"""
 
     @override
     def wrap_model_call(
-        self, request: ModelRequest, handler: Callable[[ModelRequest], ModelResponse]
-    ) -> ModelResponse:
+        self,
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], ModelResponse[ResponseT]]
+    ) -> ModelResponse[ResponseT]:
         override_request = self._build_overridden_request(request)
         return handler(override_request)
 
     @override
     async def awrap_model_call(
-        self, request: ModelRequest, handler: Callable[[ModelRequest], ModelResponse]
+        self,
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], Awaitable[ModelResponse[ResponseT]]]
     ) -> ModelResponse:
         override_request = self._build_overridden_request(request)
         return await handler(override_request)
@@ -35,10 +46,10 @@ class SystemTimeMiddleware(AgentMiddleware):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S %A")
         return _SYSTEM_TIME_PROMPT.format(current_time=current_time)
 
-    def _build_overridden_request(self, request: ModelRequest) -> ModelRequest:
+    def _build_overridden_request(self, request: ModelRequest[ContextT]) -> ModelRequest[ContextT]:
         time_prompt = self._get_time_prompt()
         new_content = list(
             request.system_message.content_blocks if request.system_message else []
         ) + [{"type": "text", "text": "\n\n" + time_prompt}]
-        new_system_message = SystemMessage(content=new_content)
+        new_system_message = SystemMessage(content_blocks=new_content)
         return request.override(system_message=new_system_message)

@@ -2,6 +2,7 @@
 使用一个 task 工具分发任务给子 Agent 执行任务
 """
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable
 from typing import Any, override, Annotated, Callable
 from langchain.messages import ToolMessage
 from langgraph.types import Command
@@ -69,9 +70,11 @@ class SubAgent(ABC):
         self, user_input: str,
         runtime: ToolRuntime[Any, AgentState]
     ) -> str | Command:
-        
+        if self._agent is None:
+            raise ValueError("_agent not initialized")
+
         inputs = _validate_and_prepare_state(
-            agent=self._agent, user_input=user_input, runtime=runtime
+            user_input=user_input, runtime=runtime
         )
 
         result = self._agent.invoke(
@@ -104,9 +107,11 @@ class SubAgent(ABC):
         self, user_input: str,
         runtime: ToolRuntime[Any, AgentState]
     ) -> str | Command:
+        if self._agent is None:
+            raise ValueError("_agent not initialized")
 
         inputs = _validate_and_prepare_state(
-            agent=self._agent,user_input=user_input, runtime=runtime
+            user_input=user_input, runtime=runtime
         )
 
         result = await self._agent.ainvoke(
@@ -220,31 +225,33 @@ class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
 
     @override
     def wrap_model_call(
-        self, request: ModelRequest, handler: Callable[[ModelRequest], ModelResponse]
-    ) -> ModelResponse:
+        self,
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], ModelResponse[ResponseT]]
+    ) -> ModelResponse[ResponseT]:
         override_request = self._build_overridden_request(request)
         return handler(override_request)
 
     @override
     async def awrap_model_call(
-        self, request: ModelRequest, handler: Callable[[ModelRequest], ModelResponse]
-    ) -> ModelResponse:
+        self,
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], Awaitable[ModelResponse[ResponseT]]]
+    ) -> ModelResponse[ResponseT]:
         override_request = self._build_overridden_request(request)
         return await handler(override_request)
     
-    def _build_overridden_request(self, request: ModelRequest) -> ModelRequest:
+    def _build_overridden_request(self, request: ModelRequest[ContextT]) -> ModelRequest[ContextT]:
         if not self.system_prompt:
             return request
         new_content = list(
             request.system_message.content_blocks if request.system_message else []
         ) + [{"type": "text", "text": "\n\n" + self.system_prompt}]
-        new_system_message = SystemMessage(content=new_content)
+        new_system_message = SystemMessage(content_blocks=new_content)
         return request.override(system_message=new_system_message)
 
-def _validate_and_prepare_state(agent: SubAgent, user_input: str, runtime: ToolRuntime) -> dict:
-    """验证 agent 和准备 state"""
-    if agent is None:
-        raise ValueError("_agent not initialized")
+def _validate_and_prepare_state(user_input: str, runtime: ToolRuntime[Any, AgentState]) -> dict:
+    """准备 state"""
     # 创建一个新的状态字典，以避免修改原始数据
     state = {k: v for k, v in runtime.state.items() if k not in _EXCLUDED_STATE_KEYS}
     state["messages"] = [{"role": "user", "content": user_input}]

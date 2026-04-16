@@ -1,4 +1,9 @@
 from langchain.agents import create_agent
+from langchain.agents.middleware.types import (
+    AgentState,
+    ResponseT,
+)
+from typing import Any
 
 from agent.llm import create_chat_model
 from agent.subagents import SubAgentEnum
@@ -17,7 +22,7 @@ class FileManagerAgent(SubAgent):
             system_prompt=AGENT_FILE_MANAGER_PROMPT,
             context_schema=AppAgentContext,
             tools=[read_file, write_file],
-            middleware=[HumanInTheLoopMiddleware(
+            middleware=[HumanInTheLoopMiddleware[AgentState[Any], AppAgentContext, Any](
                 interrupt_on={
                     "write_file": {
                         # 可选的审批

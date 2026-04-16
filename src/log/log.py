@@ -42,7 +42,7 @@ def get_logger(name: str) -> logging.Logger:
 def _get_formatter(log_format_type: str) -> logging.Formatter:
     if log_format_type == "json":
         # json 内容
-        return jsonlogger.JsonFormatter(
+        return jsonlogger.JsonFormatter( # type: ignore[import]
             fmt="%(levelname)s %(asctime)s %(name)s %(message)s %(pathname)s",
             datefmt="%Y-%m-%d %H:%M:%S",
             json_ensure_ascii=False,

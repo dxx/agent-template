@@ -5,6 +5,7 @@ from fastapi.responses import PlainTextResponse
 from log import get_logger
 from web.schemas import AppState, ApiResult, CODE_UNAUTHORIZED
 from utils import json_util
+from web.session import generate_chat_id
 
 logger = get_logger(__name__)
 
@@ -16,7 +17,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         user_token = request.headers.get("user-token")
-        chat_id = request.headers.get("chat-id")
 
         if not user_token:
             logger.warning(
@@ -29,6 +29,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     ApiResult(code=CODE_UNAUTHORIZED, message="用户未登录或登录已过期")
                 ),
             )
+
+        chat_id = request.headers.get("chat-id")
+        if not chat_id:
+            # 兼容逻辑，不应该在这里生成 chat_id
+            chat_id = generate_chat_id()
         
         request.state.app_state = AppState(
             user_id=user_token, # 假设已经通过 user-token 获取到 user_id

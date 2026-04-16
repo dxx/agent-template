@@ -31,7 +31,7 @@ async def chat_response(app_state: AppState, request: ChatRequest) -> AsyncItera
     decision = request.decision
 
     # state 初始值
-    state = AppAgentState(sub_agent_calls=[])
+    state = AppAgentState(sub_agent_calls=[]) # type: ignore[arg-type]
     inputs = {
         "messages": [{"role": "user", "content": content}],
         # 将 state 字段拆开传递
@@ -54,8 +54,8 @@ async def chat_response(app_state: AppState, request: ChatRequest) -> AsyncItera
 
     try:
         async for chunk in main_agent.astream(
-            inputs,
-            config=config,
+            inputs,  # type: ignore[arg-type]
+            config=config, # type: ignore[arg-type]
             context=context,
             stream_mode=[
                 "updates", "messages"
@@ -135,7 +135,7 @@ def _render_message_chunk(token: AIMessageChunk) -> ChatResponse | None:
     # 分块文本信息
     if token.text:
         return ChatResponse(
-            msg_id=token.id,
+            msg_id= token.id if token.id else str(uuid.uuid4()),
             content=token.text,
             created=int(datetime.now().timestamp() * 1000),
         )
@@ -173,7 +173,7 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
     if isinstance(message, AIMessage) and message.tool_calls:
         tool_names = [tool_call["name"] for tool_call in message.tool_calls]
         return ChatResponse(
-            msg_id=message.id,
+            msg_id=message.id if message.id else str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content="调用: " + "、".join(tool_names),
             created=int(datetime.now().timestamp() * 1000),
@@ -181,7 +181,7 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
      # 工具消息
     if isinstance(message, ToolMessage):
         return ChatResponse(
-            msg_id=message.id,
+            msg_id=message.id if message.id else str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content=f"{message.name} 执行结果: {message.content}",
             created=int(datetime.now().timestamp() * 1000),
@@ -237,7 +237,7 @@ def _render_interrupt(interrupt: Interrupt) -> ChatResponse:
         created=int(datetime.now().timestamp() * 1000)
     )
 
-def _resume(decision: Decision) -> dict:
+def _resume(decision: Decision | None) -> dict | None:
     if not decision:
         return None
     return {

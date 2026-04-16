@@ -58,7 +58,7 @@ class ChatRequest(BaseModel):
         default="",
         description="对话请求内容"
     )
-    decision: Decision = Field(
+    decision: Decision | None = Field(
         default=None,
         description="审批决策内容"
     )
@@ -80,6 +80,6 @@ class ChatResponse[T](BaseModel):
         default=ResponseMsgTypeEnum.NORMAL,
         description="消息类型：可选 NORMAL、PROCESS、APPROVE、ERROR"
     )
-    content: T = Field(default=None, description="对话响应内容")
-    approve: Approve = Field(default=None, description="审批内容")
+    content: T | None = Field(default=None, description="对话响应内容")
+    approve: Approve | None = Field(default=None, description="审批内容")
     created: int

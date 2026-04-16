@@ -3,9 +3,10 @@ from fastapi import APIRouter, Body, Query, Request
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 from typing import Annotated
 
+from log import get_logger
 from web.schemas import ChatRequest, ChatResponse, HealthResponse, AppState
 from web.service.chat_service import chat_response
-from log import get_logger
+from web.schemas import RequestMsgTypeEnum
 
 logger = get_logger(__name__)
 
@@ -37,7 +38,7 @@ async def test_chat(
     )
     
     chat_request = ChatRequest(
-        msg_type="NORMAL",
+        msg_type=RequestMsgTypeEnum.NORMAL,
         content=content
     )
 
