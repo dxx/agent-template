@@ -5,7 +5,6 @@ from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResp
 from langchain.messages import SystemMessage
 from langchain.agents.middleware.types import (
     AgentMiddleware,
-    AgentState,
     ContextT,
     ResponseT,
     StateT,
