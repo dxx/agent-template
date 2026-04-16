@@ -1,0 +1,21 @@
+## 消息接口
+
+### 创建新对话 
+POST http://localhost:8000/message/chat/create
+user-token: user_123
+
+### 获取指定对话的消息列表
+GET http://localhost:8000/message/chat/chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
+user-token: user_123
+
+### 获取用户所有对话的消息列表
+GET http://localhost:8000/message/all
+user-token: user_123
+
+### 删除指定对话的所有消息
+DELETE http://localhost:8000/message/chat/chat_893aa37f-f540-4252-a741-12800427a749
+user-token: user_123
+
+### 删除用户所有对话的消息
+DELETE http://localhost:8000/message/all
+user-token: user_123

@@ -1,8 +1,10 @@
+import uuid
+
 from collections.abc import AsyncIterable
+from datetime import datetime
 from langchain_core.messages import AIMessage, ToolMessage, AnyMessage, AIMessageChunk
 from langgraph.types import Interrupt, Command
-from datetime import datetime
-import uuid
+from langchain_core.runnables import RunnableConfig
 
 from agent.subagents import create_main_agent
 from agent.memory import AppAgentContext, AppAgentState
@@ -39,7 +41,8 @@ async def chat_response(app_state: AppState, request: ChatRequest) -> AsyncItera
     }
 
     thread_id = format_thread_id(app_state.chat_id, app_state.user_id)
-    config = {"configurable": {"thread_id": thread_id}}
+
+    config = RunnableConfig(configurable={"thread_id": thread_id})
 
     context = AppAgentContext(user_id=app_state.user_id)
 
@@ -55,7 +58,7 @@ async def chat_response(app_state: AppState, request: ChatRequest) -> AsyncItera
     try:
         async for chunk in main_agent.astream(
             inputs,  # type: ignore[arg-type]
-            config=config, # type: ignore[arg-type]
+            config=config,
             context=context,
             stream_mode=[
                 "updates", "messages"

@@ -4,7 +4,7 @@ from fastapi.sse import EventSourceResponse, ServerSentEvent
 from typing import Annotated
 
 from log import get_logger
-from web.schemas import ChatRequest, ChatResponse, HealthResponse, AppState
+from web.schemas import ChatRequest, ChatResponse, AppState
 from web.service.chat_service import chat_response
 from web.schemas import RequestMsgTypeEnum
 
@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 @router.post("/chat/stream", response_class=EventSourceResponse, response_model=ChatResponse)
-async def chat(
+async def chat_stream(
     request: Request,
     chat_request: Annotated[ChatRequest, Body(description="对话请求参数")],
 ) -> AsyncIterable[ServerSentEvent]:
@@ -26,12 +26,12 @@ async def chat(
 
 
 @router.get("/test/chat/stream", response_class=EventSourceResponse)
-async def test_chat(
+async def test_chat_stream(
     user_id: Annotated[str, Query(description="用户id")],
     chat_id: Annotated[str, Query(description="对话id")],
     content: Annotated[str, Query(description="对话请求内容")],
 ) -> AsyncIterable[ServerSentEvent]:
-    """测试对话接口"""
+    """测试流式对话接口"""
 
     app_sate = AppState(
         user_id, chat_id
@@ -44,8 +44,3 @@ async def test_chat(
 
     async for response in chat_response(app_sate, chat_request):
         yield ServerSentEvent(data=response)
-
-
-@router.get("/health", response_model=HealthResponse)
-async def health():
-    return HealthResponse(status="ok")

@@ -3,7 +3,6 @@ POST http://localhost:8000/chat/stream
 Content-Type: application/json
 Connection: keep-alive
 user-token: user_123
-# 指定对话 id，如果不指定服务端默认生成一个 chat-id 响应头
 chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
 
 {
@@ -15,6 +14,7 @@ POST http://localhost:8000/chat/stream
 Content-Type: application/json
 Connection: keep-alive
 user-token: user_123
+chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
 
 {
   "content": "将 hello 写入文件 hello.txt"
@@ -25,11 +25,12 @@ POST http://localhost:8000/chat/stream
 Content-Type: application/json
 Connection: keep-alive
 user-token: user_123
+chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
 
 {
   "msg_type": "DECISION",
   "decision": {
-    "decision_id": "05e4bc07e0775d1ba5ca073dc78b2040",
+    "decision_id": "a5f2f274d287c3173568a0319766d020",
     "items": [
       {
         "decision_type": "approve",
@@ -44,6 +45,7 @@ POST http://localhost:8000/chat/stream
 Content-Type: application/json
 Connection: keep-alive
 user-token: user_123
+chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
 
 {
   "content": "我叫 Alice，我的邮箱是 alice@example.com，爱好学习、写代码"
