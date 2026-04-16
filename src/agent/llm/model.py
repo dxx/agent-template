@@ -5,7 +5,6 @@ from config.settings import get_settings
 settings = get_settings()
 
 from langchain.chat_models import init_chat_model
-from pydantic import SecretStr
 from config.settings import get_settings
 settings = get_settings()
 
