@@ -3,7 +3,7 @@ from pathlib import Path
 
 from agent.llm import create_chat_model
 from agent.middleware import SubAgent, SkillsMiddleware
-from agent.tools import read_file, greet
+from agent.tools import greet
 from agent.memory import AppAgentContext, AppAgentState
 
 class GreetAgent(SubAgent):
@@ -23,8 +23,6 @@ class GreetAgent(SubAgent):
             context_schema=AppAgentContext,
             # 子代理需要访问 state 时配置
             state_schema=AppAgentState,
-            # read_file，当 skills 中需要读取参考文件时使用
-            tools=[read_file],
             # 安装 skills 中间件
             middleware=[
                 SkillsMiddleware(

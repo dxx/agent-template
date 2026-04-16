@@ -90,7 +90,8 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
 
         self.tools = [
             # 注册加载技能的工具
-            self._create_load_skill_tool()
+            self._create_load_skill_tool(),
+            self._create_read_file_tool()
         ]
         self.grouped_tools = grouped_tools
 
@@ -205,6 +206,15 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
             parse_docstring=True
         )
     
+    def _create_read_file_tool(self) -> BaseTool:
+        # 创建工具函数
+        return StructuredTool.from_function(
+            name="read_source_file",
+            func=_read_source_file,
+            coroutine=_aread_source_file,
+            parse_docstring=True
+        )
+    
     def _build_skills_prompt(self):
         skill_names = set()
 
@@ -315,6 +325,28 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
                     return request.override(tool=tool)
         return override_request
 
+
+def _read_source_file(file_path: str) -> str:
+    """读取资源文件内容。
+    
+    Args:
+        file_path: 文件路径。使用绝对路径
+    """
+
+    file_path = _resolve_path(file_path)
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+        return content
+
+async def _aread_source_file(file_path: str) -> str:
+    """读取资源文件内容。
+    
+    Args:
+        file_path: 文件路径。使用绝对路径
+    """
+
+    return _read_source_file(file_path)
+
 def _resolve_path(file_path: str) -> str:
     path = ""
     if file_path.startswith("/"):
@@ -325,4 +357,4 @@ def _resolve_path(file_path: str) -> str:
         work_dir = Path.cwd()
         path = str(work_dir) + "/" + file_path.removeprefix("./")
     return path
-    
+  
