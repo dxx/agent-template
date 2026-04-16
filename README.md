@@ -20,7 +20,7 @@ agent-template/
 │   ├── config/                 # 配置管理
 │   │   └── settings.py         # Pydantic Settings
 │   ├── agent/                  # Agent 核心模块
-│   │   ├── subagents/           # 子代理模块
+│   │   ├── subagents/          # 子代理模块
 │   │   │   ├── main.py         # 主 Agent 创建函数
 │   │   │   ├── file_manager.py # 文件管理代理
 │   │   │   ├── research.py     # 研究代理
@@ -51,16 +51,26 @@ agent-template/
 │   │       └── user.py
 │   ├── web/                    # Web 服务
 │   │   ├── server.py           # FastAPI 应用
-│   │   ├── api/routes.py       # API 路由
+│   │   ├── api/                # API 路由
+│   │   │   ├── __init__.py     # 路由模块导出
+│   │   │   ├── health.py       # 健康检查路由
+│   │   │   ├── chat.py         # 对话路由
+│   │   │   └── message.py      # 消息管理路由
 │   │   ├── middleware/         # 中间件
-│   │   │   └── auth.py         # 认证中间件
+│   │   │   ├── auth.py         # 认证中间件
+│   │   │   └── chat.py         # 对话状态中间件
 │   │   ├── schemas/            # 数据模型
 │   │   │   ├── chat.py         # 对话相关模型
+│   │   │   ├── message.py      # 消息相关模型
 │   │   │   ├── api.py          # API 通用模型
 │   │   │   ├── api_code.py     # 响应码定义
 │   │   │   └── state.py        # 应用状态模型
-│   │   └── service/            # 服务层
-│   │       └── chat_service.py # 对话服务
+│   │   ├── service/            # 服务层
+│   │   │   ├── chat_service.py # 对话服务
+│   │   │   └── message_service.py # 消息服务
+│   │   └── session/            # 会话管理
+│   │       ├── __init__.py
+│   │       └── chat.py         # 对话会话管理
 │   ├── log/                    # 日志模块
 │   │   └── log.py
 │   ├── utils/                  # 工具函数
@@ -138,17 +148,22 @@ agent-template/
 - 认证中间件
 - 生命周期管理（Postgres 连接初始化/关闭）
 
-**路由** (`api/routes.py`):
+**路由** (`api/`):
 
 | 路由 | 方法 | 功能 |
 |------|------|------|
+| `/health` | GET | 健康检查 |
 | `/chat/stream` | POST | SSE 流式对话（需认证） |
 | `/test/chat/stream` | GET | 测试对话（无需认证） |
-| `/health` | GET | 健康检查 |
+| `/message/chat/create` | POST | 创建新对话 |
+| `/message/all` | GET | 获取用户所有对话 |
+| `/message/chat/{chat_id}` | GET | 获取指定对话的消息列表 |
+| `/message/chat/{chat_id}` | DELETE | 删除指定对话的所有消息 |
+| `/message/all` | DELETE | 删除用户所有对话 |
 
-**认证** (`middleware/auth.py`):
-- 基于 session_id 的 Cookie 认证
-- 公开路径白名单: `/docs`, `/openapi.json`, `/health`, `/test/chat/stream`
+**中间件** (`middleware/`):
+- `AuthMiddleware`: 基于 session_id 的 Cookie 认证，公开路径白名单: `/docs`, `/openapi.json`, `/health`, `/test/chat/stream`
+- `ChatMiddleware`: 对话状态中间件，从请求中提取 `user_id` 和 `chat_id` 构建应用状态
 
 ### API 数据模型
 
@@ -249,7 +264,7 @@ uv run src/main.py
 
 测试对话（无需认证）：
 ```
-GET /test/chat/stream?user_id=test_user&content=你好
+GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 ```
 
 ## 环境配置
