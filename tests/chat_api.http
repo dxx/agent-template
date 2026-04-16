@@ -3,6 +3,7 @@ POST http://localhost:8000/chat/stream
 Content-Type: application/json
 Connection: keep-alive
 user-token: user_123
+# 通过 /message/chat/create 创建获得，同一轮对话里面保持相同的 chat-id
 chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
 
 {
