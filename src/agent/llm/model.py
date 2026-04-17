@@ -1,12 +1,15 @@
+from typing import Literal
 from langchain.chat_models import init_chat_model, BaseChatModel
 from pydantic import SecretStr
 from config.settings import get_settings
 
 settings = get_settings()
 
+ReasoningEffort = Literal["minimal", "low", "medium", "high"]
+
 def create_chat_model(
     enable_thinking: bool = True,
-    reasoning_effort: str = "minimal",
+    reasoning_effort: ReasoningEffort = "minimal",
     stream_token_usage: bool = False,
 ) -> BaseChatModel:
     """

@@ -8,11 +8,12 @@ dependencies = [
     "uvicorn>=0.30.0",
     "langchain==1.2.15",
     "langchain-openai==1.1.12",
+    "langgraph-checkpoint-postgres>=3.0.5",
+    "langchain-mcp-adapters>=0.2.2",
     "python-dotenv>=1.0.0",
     "pydantic>=2.0.0",
     "python-json-logger>=2.0.0",
     "pydantic-settings>=2.13.1",
     "psycopg[binary]>=3.3.3",
-    "langgraph-checkpoint-postgres>=3.0.5",
     "pyyaml>=6.0.3",
 ]
