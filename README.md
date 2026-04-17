@@ -39,7 +39,8 @@ agent-template/
 │   │   │   └── prebuild/       # 预构建中间件
 │   │   │       ├── skills.py   # Skills 支持
 │   │   │       ├── subagents.py # 子代理支持
-│   │   │       └── tool_calling_check.py # 工具调用检查
+│   │   │       ├── tool_calling_check.py # 工具调用检查
+│   │   │       └── mcp_client.py # MCP Client 中间件
 │   │   ├── memory/             # 状态管理
 │   │   │   ├── entry.py        # Checkpointer/Store 入口
 │   │   │   ├── state.py        # Agent 状态定义
@@ -126,6 +127,7 @@ agent-template/
 | `SummarizationMiddleware` | 消息超过20条或token超过10000时自动摘要 |
 | `ToolCallingCheckMiddleware` | 检查工具调用是否正确执行，补充缺失的 ToolMessage |
 | `HumanInTheLoopMiddleware` | 人工介入，支持 approve/reject 决策 |
+| `MCPClientMiddleware` | MCP Client 中间件，连接 MCP Server 并动态注入工具 |
 
 **子代理系统** (`subagents/`):
 
@@ -140,6 +142,13 @@ agent-template/
 
 **人工介入模块** (`hitl/`):
 - `approve.py`: 审批内容生成，将工具调用转换为用户可读的审批信息
+
+**MCP Client 中间件** (`prebuild/mcp_client.py`):
+- `MCPClientMiddleware`: 连接 MCP (Model Context Protocol) Server，动态加载和注入工具
+- 支持配置多个 MCP Server 连接
+- 工具名称自动添加前缀以避免冲突（格式：`servername_toolname`）
+- 支持 `ignore_tools` 参数屏蔽不需要的工具
+- 支持 `callbacks` 和 `tool_interceptors` 扩展功能
 
 **技能系统** (`agent/skills/`):
 - `SkillsMiddleware`: 从 `skills/` 目录加载技能定义，向系统提示词注入可用技能列表
