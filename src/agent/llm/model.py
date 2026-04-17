@@ -4,10 +4,6 @@ from config.settings import get_settings
 
 settings = get_settings()
 
-from langchain.chat_models import init_chat_model
-from config.settings import get_settings
-settings = get_settings()
-
 def create_chat_model(
     enable_thinking: bool = True,
     reasoning_effort: str = "minimal",
