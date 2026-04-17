@@ -1,3 +1,4 @@
+from pathlib import Path
 from langchain.agents import create_agent
 
 from agent.llm import create_chat_model
@@ -5,6 +6,7 @@ from agent.subagents import SubAgentEnum
 from agent.middleware import SubAgent
 from agent.prompts import AGENT_RESEARCH_PROMPT
 from agent.memory import AppAgentContext
+from agent.middleware import MCPClientMiddleware
 
 
 class ReseachAgent(SubAgent):
@@ -14,7 +16,24 @@ class ReseachAgent(SubAgent):
             model=create_chat_model(),
             name=SubAgentEnum.RESEARCH.value,
             system_prompt=AGENT_RESEARCH_PROMPT,
-            context_schema=AppAgentContext
+            context_schema=AppAgentContext,
+            middleware=[
+                # 安装 MCP 中间件
+                MCPClientMiddleware(
+                    mcp_config={
+                        # ArXiv AI搜索服务
+                        "arxiv": {
+                            "transport": "stdio",
+                            "command": "uvx",
+                            "args": [
+                                "arxiv-mcp-server",
+                                "--storage-path",
+                                f"{Path.cwd()}/arxiv/paper"
+                            ]
+                        }
+                    }
+                )
+            ]
         )
 
     def get_name(self) -> str:
