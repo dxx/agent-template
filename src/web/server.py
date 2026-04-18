@@ -133,8 +133,9 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-app.add_middleware(AuthMiddleware)
+# 先添加后执行
 app.add_middleware(ChatMiddleware)
+app.add_middleware(AuthMiddleware)
 
 app.include_router(health_router)
 app.include_router(chat_router)

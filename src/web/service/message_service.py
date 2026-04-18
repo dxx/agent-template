@@ -37,6 +37,12 @@ async def get_user_chat_ids(user_id: str) -> list[str]:
     return []
 
 
+async def is_chat_id_exists(user_id: str, chat_id: str) -> bool:
+    """判断用户的 chat_id 是否存在"""
+    user_chat_ids = await get_user_chat_ids(user_id)
+    return chat_id in user_chat_ids
+
+
 async def get_chat_message_list(user_id: str, chat_id: str) -> list[Message]:
     """获取指定对话的消息列表（转换为 Message schema）"""
     raw_messages = await get_chat_messages(user_id, chat_id)
@@ -81,16 +87,16 @@ async def delete_chat_messages(user_id: str, chat_id: str) -> bool:
 async def delete_all_chat_messages(user_id: str) -> bool:
     """删除用户所有对话的消息"""
     chat_ids = await get_user_chat_ids(user_id)
-    
+
     # 删除每个对话的消息
     for chat_id in chat_ids:
         thread_id = format_thread_id(chat_id, user_id)
         await _checkpointer.adelete_thread(thread_id)
-    
+
     # 删除用户的 chat_ids 记录
     key = user_id
     await _store.adelete(_NAMESPACE_CHAT_ID, key)
-    
+
     return True
 
 
