@@ -189,7 +189,7 @@ chat-id: chat_782e77c0-ddb6-45a7-b8ae-5c16a3f51916
 
 返回： 
 
-```json
+```
 data: {"msg_id":"lc_run--019d9f61-3417-7e52-95d2-eb0fc23c0836","msg_type":"process","content":"调用: task","approve":null,"created":1776495443195}
 
 data: {"msg_id":"lc_run--019d9f61-3d00-76c1-8557-6bfea3ff0cc6","msg_type":"process","content":"调用: load_skill","approve":null,"created":1776495445123}

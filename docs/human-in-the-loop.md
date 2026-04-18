@@ -145,7 +145,7 @@ chat-id: chat_975c7d4b-65e5-4a7f-83a5-6b378b70d2d7
 
 返回审批信息：
 
-```json
+```
 data: {"msg_id":"lc_run--019d9eda-16e8-7392-9b0c-969cf4bd4e08","msg_type":"process","content":"调用: task","approve":null,"created":1776486587220}
 
 data: {"msg_id":"lc_run--019d9eda-1b66-7e11-ac84-8e21e1fc2ed6","msg_type":"process","content":"调用: write_file","approve":null,"created":1776486589126}

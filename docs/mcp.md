@@ -105,7 +105,7 @@ chat-id: chat_782e77c0-ddb6-45a7-b8ae-5c16a3f51916
 
 返回：
 
-```json
+```
 data: {"msg_id":"lc_run--019d9f59-5e02-77a1-b0db-9238ff9a3c59","msg_type":"process","content":"调用: task","approve":null,"created":1776494928320}
 
 data: {"msg_id":"lc_run--019d9f59-746f-7e73-9803-c544aef04ad3","msg_type":"process","content":"调用: arxiv_search_papers","approve":null,"created":1776494934487}
