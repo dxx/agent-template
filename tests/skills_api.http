@@ -1,0 +1,10 @@
+### 访问技能
+POST http://localhost:8000/chat/stream
+Content-Type: application/json
+Connection: keep-alive
+user-token: user_123
+chat-id: chat_782e77c0-ddb6-45a7-b8ae-5c16a3f51916
+
+{
+  "content": "我叫 Alice，你叫什么。请使用 greet 技能回复"
+}

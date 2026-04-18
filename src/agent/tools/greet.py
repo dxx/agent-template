@@ -6,10 +6,10 @@ from agent.memory import AppAgentContext, AppAgentState
 from agent.tools.user import namespace
 
 _USER_INFO = {
-    "1": {
+    "user_123": {
         "name": "Alice"
     },
-    "2": {
+    "user_111": {
         "name": "Tom"
     }
 }

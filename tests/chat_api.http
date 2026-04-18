@@ -4,41 +4,10 @@ Content-Type: application/json
 Connection: keep-alive
 user-token: user_123
 # 通过 /message/chat/create 创建获得，同一轮对话里面保持相同的 chat-id
-chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
+chat-id: chat_710822f0-c2d2-4cd8-bdb3-a6cd3301941b
 
 {
-  "content": "你今天吃饭了吗。请使用 greet 技能回复"
-}
-
-### 人工介入
-POST http://localhost:8000/chat/stream
-Content-Type: application/json
-Connection: keep-alive
-user-token: user_123
-chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
-
-{
-  "content": "将 hello 写入文件 hello.txt"
-}
-
-### 人工审批
-POST http://localhost:8000/chat/stream
-Content-Type: application/json
-Connection: keep-alive
-user-token: user_123
-chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
-
-{
-  "msg_type": "DECISION",
-  "decision": {
-    "decision_id": "a5f2f274d287c3173568a0319766d020",
-    "items": [
-      {
-        "decision_type": "approve",
-        "description": "同意"
-      }
-    ]
-  }
+  "content": "你今天吃了吗"
 }
 
 ### 访问 User agent

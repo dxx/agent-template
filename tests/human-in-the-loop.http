@@ -1,0 +1,30 @@
+### 人工介入
+POST http://localhost:8000/chat/stream
+Content-Type: application/json
+Connection: keep-alive
+user-token: user_123
+chat-id: chat_40c1c12d-d0f3-45b0-93f7-f1bab20a028a
+
+{
+  "content": "将 hello 写入文件 hello.txt"
+}
+
+### 人工审批
+POST http://localhost:8000/chat/stream
+Content-Type: application/json
+Connection: keep-alive
+user-token: user_123
+chat-id: chat_40c1c12d-d0f3-45b0-93f7-f1bab20a028a
+
+{
+  "msg_type": "decision",
+  "decision": {
+    "decision_id": "c122fd45fac6bbd7c104195ab7d8433b",
+    "items": [
+      {
+        "decision_type": "approve",
+        "description": "同意"
+      }
+    ]
+  }
+}
