@@ -1,6 +1,6 @@
 # Agent Template
 
-![python](https://img.shields.io/badge/python-4571A1)
+![python](https://img.shields.io/badge/language-python-4571A1)
 [![MIT licensed](https://img.shields.io/github/license/dxx/agent-template.svg?color=98BB3E)](./LICENSE)
 
 专用于 AI Agent 服务的项目模版，基于 LangChain + LangGraph 构建，支持多子代理协作和人工审批流程。
