@@ -11,4 +11,9 @@ if __name__ == "__main__":
         reload = True
 
     # 运行 server 模块中的 app 变量
-    uvicorn.run(app="web.server:app", host=settings.app_host, port=settings.app_port, reload=reload)
+    uvicorn.run(
+        app="web.server:app",
+        host=settings.app_host,
+        port=settings.app_port,
+        reload=reload,
+    )
