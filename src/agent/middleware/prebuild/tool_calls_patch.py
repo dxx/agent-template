@@ -29,18 +29,22 @@ from log import get_logger
 
 logger = get_logger(__name__)
 
-class ToolCallingCheckMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
+class ToolCallsPatchMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
 
     @override
-    def before_model(
+    def before_agent(
         self, state: AgentState[Any], runtime: Runtime[ContextT]
     ) -> dict[str, Any] | None:
+        messages = state["messages"]
+        if not messages or len(messages) == 0:
+            return None
+        
+        new_messages = self._check_get_messages(messages)
 
-        new_messages = self._check_get_messages(state)
-        if len(new_messages) == len(state["messages"]):
+        if len(new_messages) == len(messages):
             return None
  
-        logger.info("Supplement missing tool call messages")
+        logger.info("Patch missing tool call messages")
             
         # 替换掉 messages
         return {
@@ -51,41 +55,29 @@ class ToolCallingCheckMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         }
     
     @override
-    async def abefore_model(
+    async def abefore_agent(
         self, state: AgentState[Any], runtime: Runtime[ContextT]
     ) -> dict[str, Any] | None:
-        return self.before_model(state, runtime)
+        return self.before_agent(state, runtime)
     
-    def _check_get_messages(self, state: AgentState[Any]) -> list[AnyMessage]:
-        messages = state["messages"]
-        if not messages:
-            return []
-        inserts = []
-        new_messages = [*messages]
-
+    def _check_get_messages(self, messages: list[AnyMessage]) -> list[AnyMessage]:
+        new_messages = []
         for i, message in enumerate(messages):
+            new_messages.append(message)
             if  isinstance(message, AIMessage) and message.tool_calls:
-                tool_calls = message.tool_calls
-                for tool_call in tool_calls:
+                for tool_call in message.tool_calls:
                     if self._check_after(tool_call, i + 1, messages):
                         continue
                     # 补充 ToolMessage
-                    inserts.append({
-                        "index": i + 1,
-                        "msg": ToolMessage(
+                    new_messages.append(ToolMessage(
                             tool_call_id=tool_call["id"],
                             name=tool_call["name"],
-                            content="执行结果未知，不需要再处理",
+                            content="任务被取消了",
                         )
-                    })
-  
-        for insert_message in inserts:
-            new_messages.insert(insert_message["index"], insert_message["msg"])
+                    )
         return new_messages
     
     def _check_after(self, tool_call: ToolCall, i, messages: list[AnyMessage]) -> bool:
-        if i >= len(messages):
-            return True
         while i < len(messages):
             message = messages[i]
             if isinstance(message, ToolMessage):

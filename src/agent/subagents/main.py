@@ -6,7 +6,7 @@ from agent.middleware import (
     SubAgentMiddleware,
     SummarizationMiddleware,
     SystemTimeMiddleware,
-    ToolCallingCheckMiddleware
+    ToolCallsPatchMiddleware
 )
 from agent.memory import (
     AppAgentContext,
@@ -66,7 +66,6 @@ def create_main_agent():
                 ],
                 keep=("messages", 20) # 保留多少最近 20 条消息
             ),
-            # 放在 SummarizationMiddleware 之后，before_model 先执行
-            ToolCallingCheckMiddleware()
+            ToolCallsPatchMiddleware()
         ]
     )
