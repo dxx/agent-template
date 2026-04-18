@@ -186,73 +186,6 @@ agent-template/
 - `AuthMiddleware`: 基于请求头认证，公开路径白名单: `/docs`, `/openapi.json`, `/health`, `/test/chat/stream`
 - `ChatMiddleware`: 对话状态中间件，从请求中提取 `user_id` 和 `chat_id` 构建应用状态
 
-### API 数据模型
-
-#### 请求消息类型 (RequestMsgTypeEnum)
-| 枚举值 | 说明 |
-|--------|------|
-| `NORMAL` | 普通消息 |
-| `DECISION` | 决策内容消息 |
-
-#### 响应消息类型 (ResponseMsgTypeEnum)
-| 枚举值 | 说明 |
-|--------|------|
-| `NORMAL` | 普通消息 |
-| `PROCESS` | 过程处理消息 |
-| `APPROVE` | 审批消息 |
-| `ERROR` | 错误消息 |
-
-#### 决策类型 (DecisionType)
-| 枚举值 | 说明 |
-|--------|------|
-| `approve` | 通过 |
-| `reject` | 拒绝 |
-
-#### 对话请求 (ChatRequest)
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `msg_type` | `RequestMsgTypeEnum` | 否 | 消息类型，默认 `NORMAL` |
-| `content` | `str` | 否 | 对话请求内容 |
-| `decision` | `Decision` | 否 | 审批决策内容 |
-
-**校验规则**:
-- `msg_type=NORMAL` 时，`content` 不能为空或仅包含空白字符
-- `msg_type=DECISION` 时，`decision` 不能为空
-
-#### 对话响应 (ChatResponse[T])
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `msg_id` | `str` | 是 | 消息 ID |
-| `msg_type` | `ResponseMsgTypeEnum` | 否 | 消息类型，默认 `NORMAL` |
-| `content` | `T` | 否 | 对话响应内容 |
-| `approve` | `Approve` | 否 | 审批内容 |
-| `created` | `int` | 是 | 创建时间戳 |
-
-#### 审批内容 (Approve)
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `approve_id` | `str` | 是 | 审批 ID |
-| `items` | `list[ApproveItem]` | 是 | 审批项 |
-
-#### 审批项 (ApproveItem)
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | `str` | 是 | 审批项名称 |
-| `description` | `str` | 是 | 审批项描述 |
-| `decisions` | `list[DecisionType]` | 是 | 可选的决策类型列表 |
-
-#### 审批决策 (Decision)
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `decision_id` | `str` | 是 | 决策 ID |
-| `items` | `list[DecisionItem]` | 是 | 决策项，和审批内容顺序对应 |
-
-#### 决策项 (DecisionItem)
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `decision_type` | `DecisionType` | 是 | 决策类型 |
-| `description` | `str` | 否 | 决策描述，可为空 |
-
 
 ## 快速开始
 
@@ -349,7 +282,7 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 某些危险操作（如文件写入）会触发人工审批：
 
 1. 工具调用 → `HumanInTheLoopMiddleware` → `interrupt()` 中断
-2. 返回审批请求给前端（`msg_type=APPROVE`）
+2. 返回审批请求给前端（`msg_type=approve`）
 3. 用户提交决策（`approve`/`reject`）
 4. 处理决策后继续或返回错误
 
