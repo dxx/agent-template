@@ -83,12 +83,12 @@ agent = create_agent(
                 },
             }
         ),
-        ToolCallingCheckMiddleware()
+        ToolCallsPatchMiddleware()
     ]
 )
 ```
 
-> 某些 LLM 对话时会检查工具调用结果，没有提交审批会导致工具执行结果丢失，使用 `ToolCallingCheckMiddleware` 会补充上一次工具调用丢失的工具消息。
+> 某些 LLM 对话时会检查工具调用结果，没有提交审批会导致工具执行结果丢失，使用 `ToolCallsPatchMiddleware` 会补充上一次工具调用丢失的工具消息。
 
 在 Subagent 中使用：
 
