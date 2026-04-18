@@ -206,7 +206,7 @@ decision_id 对应 approve 消息中的 approve_id。
 - `approve`: 批准操作
 - `reject`: 拒绝操作
 
-```json
+```
 data: {"msg_id":"b43af8a7-18b8-445f-a6bf-4de34b0ce649","msg_type":"process","content":"write_file 执行结果: 写入文件成功","approve":null,"created":1776487002052}
 
 data: {"msg_id":"f0321e7e-9407-4f5d-99fe-ab10bfa1583f","msg_type":"process","content":"task 执行结果: 已成功将内容 \"hello\" 写入文件 hello.txt。","approve":null,"created":1776487002879}
