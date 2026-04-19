@@ -1,4 +1,4 @@
-if __name__ == "__main__":
+def run():
     import uvicorn
 
     from config.settings import get_settings
@@ -17,3 +17,6 @@ if __name__ == "__main__":
         port=settings.app_port,
         reload=reload,
     )
+
+if __name__ == "__main__":
+    run()
