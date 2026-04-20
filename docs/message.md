@@ -9,7 +9,7 @@
 | 字段             | 类型                      | 说明                      |
 | -------------- | ----------------------- | ----------------------- |
 | `message_id`   | `str`                   | 消息 ID                   |
-| `message_type` | `Literal["user", "ai"]` | 消息类型：user=用户消息，ai=AI 消息 |
+| `message_type` | `Literal["user", "agent"]` | 消息类型：user=用户消息，agent=Agent 消息 |
 | `content`      | `str`                   | 消息内容                    |
 
 ### MessageResponse
@@ -66,7 +66,7 @@ user-token: user_123
                 },
                 {
                     "message_id": "msg_002",
-                    "message_type": "ai",
+                    "message_type": "agent",
                     "content": "你好，有什么可以帮你的？"
                 }
             ]

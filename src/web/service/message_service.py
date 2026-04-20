@@ -154,7 +154,7 @@ def _convert_to_message(any_msg: AnyMessage) -> Message | None:
             return None
         return Message(
             message_id=any_msg.id if any_msg.id else "",
-            message_type="ai",
+            message_type="agent",
             content=any_msg.text,
         )
     return None
