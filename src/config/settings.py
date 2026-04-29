@@ -19,7 +19,7 @@ if not APP_ENV:
 if APP_ENV not in (item.value for item in AppEnv):
     raise ValueError(f"APP_ENV is incorrect")
 
-env_file = ".env" if os.getenv("APP_ENV") == "default" else f".{os.getenv("APP_ENV")}"
+env_file = ".env" if os.getenv("APP_ENV") == "default" else f".{os.getenv('APP_ENV')}"
 
 # 从当前模块往上找到 src，和 src 同级别，.env 文件和 src 目录同级
 path = Path(__file__).resolve().parent.parent.parent
