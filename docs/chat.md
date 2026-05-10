@@ -104,10 +104,10 @@ chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
 {"msg_id": "xxx", "msg_type": "normal", "content": "你好！", "created": 1234567890}
 
 // 工具调用
-{"msg_id": "xxx", "msg_type": "process", "content": "调用: write_file", "created": 1234567890}
+{"msg_id": "xxx", "msg_type": "process", "content": "调用 write_file", "created": 1234567890}
 
 // 工具结果
-{"msg_id": "xxx", "msg_type": "process", "content": "write_file 执行结果: 写入成功", "created": 1234567890}
+{"msg_id": "xxx", "msg_type": "process", "content": "write_file 执行成功", "created": 1234567890}
 
 // 审批请求
 {"msg_id": "xxx", "msg_type": "approve", "approve": {"approve_id": "xxx", "items": [{"name": "write_file", "description": "写入文件需要审批", "decisions": ["approve", "reject"]}]}, "created": 1234567890}
@@ -140,5 +140,3 @@ chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
     }
 }
 ```
-
-# 

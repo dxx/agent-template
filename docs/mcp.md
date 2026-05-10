@@ -106,13 +106,13 @@ chat-id: chat_782e77c0-ddb6-45a7-b8ae-5c16a3f51916
 返回：
 
 ```
-data: {"msg_id":"lc_run--019d9f59-5e02-77a1-b0db-9238ff9a3c59","msg_type":"process","content":"调用: task","approve":null,"created":1776494928320}
+data: {"msg_id":"lc_run--019d9f59-5e02-77a1-b0db-9238ff9a3c59","msg_type":"process","content":"调用 task","approve":null,"created":1776494928320}
 
-data: {"msg_id":"lc_run--019d9f59-746f-7e73-9803-c544aef04ad3","msg_type":"process","content":"调用: arxiv_search_papers","approve":null,"created":1776494934487}
+data: {"msg_id":"lc_run--019d9f59-746f-7e73-9803-c544aef04ad3","msg_type":"process","content":"调用 arxiv_search_papers","approve":null,"created":1776494934487}
 
-data: {"msg_id":"701ae4f1-3592-4299-a520-cf21b5d03832","msg_type":"process","content":"arxiv_search_papers 执行结果: [{'type': 'text', 'text': '{\\n  \"total_results\": 10,\\n  \"papers\": [...], \"categories\": [\\n        \"cs.CL\"\\n         }\\n  ]\\n}', 'id': 'lc_236fd675-baca-4f07-aac6-f70cf5d59db8'}]","approve":null,"created":1776494936586}
+data: {"msg_id":"701ae4f1-3592-4299-a520-cf21b5d03832","msg_type":"process","content":"arxiv_search_papers 执行成功","approve":null,"created":1776494936586}
 
-data: {"msg_id":"f16a11c2-160b-4292-9d56-02c3929180c2","msg_type":"process","content":"task 执行结果: DeepSeek-V3是671B参数的MoE大模型，采用MLA和DeepSeekMoE架构，无辅助损失负载均衡，训练高效稳定，性能超多数开源模型，可媲美闭源顶尖模型。","approve":null,"created":1776494938470}
+data: {"msg_id":"f16a11c2-160b-4292-9d56-02c3929180c2","msg_type":"process","content":"task 执行成功","approve":null,"created":1776494938470}
 
 data: {"msg_id":"lc_run--019d9f59-8969-7091-86c1-f5ecd0a506ba","msg_type":"normal","content":"Deep","approve":null,"created":1776494939172}
 

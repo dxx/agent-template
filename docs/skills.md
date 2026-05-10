@@ -190,21 +190,21 @@ chat-id: chat_782e77c0-ddb6-45a7-b8ae-5c16a3f51916
 返回： 
 
 ```
-data: {"msg_id":"lc_run--019d9f61-3417-7e52-95d2-eb0fc23c0836","msg_type":"process","content":"调用: task","approve":null,"created":1776495443195}
+data: {"msg_id":"lc_run--019d9f61-3417-7e52-95d2-eb0fc23c0836","msg_type":"process","content":"调用 task","approve":null,"created":1776495443195}
 
-data: {"msg_id":"lc_run--019d9f61-3d00-76c1-8557-6bfea3ff0cc6","msg_type":"process","content":"调用: load_skill","approve":null,"created":1776495445123}
+data: {"msg_id":"lc_run--019d9f61-3d00-76c1-8557-6bfea3ff0cc6","msg_type":"process","content":"调用 load_skill","approve":null,"created":1776495445123}
 
-data: {"msg_id":"17dd44c1-d155-40f2-8d01-98d0b2105659","msg_type":"process","content":"load_skill 执行结果: # Greet\n\n用户打招呼的时候参考 ./references/greet.md 中的说明进行回复。","approve":null,"created":1776495445125}
+data: {"msg_id":"17dd44c1-d155-40f2-8d01-98d0b2105659","msg_type":"process","content":"load_skill 执行成功","approve":null,"created":1776495445125}
 
-data: {"msg_id":"lc_run--019d9f61-4489-7a72-ab22-3af3857e8034","msg_type":"process","content":"调用: read_source_file","approve":null,"created":1776495446210}
+data: {"msg_id":"lc_run--019d9f61-4489-7a72-ab22-3af3857e8034","msg_type":"process","content":"调用 read_source_file","approve":null,"created":1776495446210}
 
-data: {"msg_id":"1990a3b2-cf82-4a67-8742-5317ea40786d","msg_type":"process","content":"read_source_file 执行结果: # 打招呼方式\n\n## 简单回复\n\n用户询问方式和回复:\n\n- **你好**: 你好啊\n\n## 用工具回复\n\n以上情况不满足的时候，使用 `greet` 工具和用户进行打招呼。\n","approve":null,"created":1776495446227}
+data: {"msg_id":"1990a3b2-cf82-4a67-8742-5317ea40786d","msg_type":"process","content":"read_source_file 执行成功","approve":null,"created":1776495446227}
 
-data: {"msg_id":"lc_run--019d9f61-48d6-7031-b1a9-32dd614f0f94","msg_type":"process","content":"调用: greet","approve":null,"created":1776495447230}
+data: {"msg_id":"lc_run--019d9f61-48d6-7031-b1a9-32dd614f0f94","msg_type":"process","content":"调用 greet","approve":null,"created":1776495447230}
 
-data: {"msg_id":"709b8919-d54d-48b7-a18b-c4075abfe276","msg_type":"process","content":"greet 执行结果: Alice 下午好! 请问有什么可以帮你的呢?","approve":null,"created":1776495447232}
+data: {"msg_id":"709b8919-d54d-48b7-a18b-c4075abfe276","msg_type":"process","content":"greet 执行成功","approve":null,"created":1776495447232}
 
-data: {"msg_id":"0c77c0c9-a6b1-4494-b8b0-cd6e5868ca1e","msg_type":"process","content":"task 执行结果: Alice 下午好! 我叫招待助手，很高兴认识你！请问有什么可以帮你的呢?","approve":null,"created":1776495448135}
+data: {"msg_id":"0c77c0c9-a6b1-4494-b8b0-cd6e5868ca1e","msg_type":"process","content":"task 执行成功","approve":null,"created":1776495448135}
 
 data: {"msg_id":"lc_run--019d9f61-504b-7821-9876-ca7f85d54ee5","msg_type":"normal","content":"Alice","approve":null,"created":1776495448779}
 

@@ -146,9 +146,9 @@ chat-id: chat_975c7d4b-65e5-4a7f-83a5-6b378b70d2d7
 返回审批信息：
 
 ```
-data: {"msg_id":"lc_run--019d9eda-16e8-7392-9b0c-969cf4bd4e08","msg_type":"process","content":"调用: task","approve":null,"created":1776486587220}
+data: {"msg_id":"lc_run--019d9eda-16e8-7392-9b0c-969cf4bd4e08","msg_type":"process","content":"调用 task","approve":null,"created":1776486587220}
 
-data: {"msg_id":"lc_run--019d9eda-1b66-7e11-ac84-8e21e1fc2ed6","msg_type":"process","content":"调用: write_file","approve":null,"created":1776486589126}
+data: {"msg_id":"lc_run--019d9eda-1b66-7e11-ac84-8e21e1fc2ed6","msg_type":"process","content":"调用 write_file","approve":null,"created":1776486589126}
 
 data: {"msg_id":"05e1073d-0222-4c5b-87ea-615bbe308abd","msg_type":"approve","content":null,"approve":{"approve_id":"e816616e811eb588f3766b02b5c8d6a0","items":[{"name":"write_file","description":"### 审核内容（中文翻译）\n拟执行操作：调用`write_file`工具写入文件\n- 文件路径：`hello.txt`\n- 写入内容：`hello`","decisions":["approve","reject"]}]},"created":1776486589127}
 ```
@@ -207,9 +207,9 @@ decision_id 对应 approve 消息中的 approve_id。
 - `reject`: 拒绝操作
 
 ```
-data: {"msg_id":"b43af8a7-18b8-445f-a6bf-4de34b0ce649","msg_type":"process","content":"write_file 执行结果: 写入文件成功","approve":null,"created":1776487002052}
+data: {"msg_id":"b43af8a7-18b8-445f-a6bf-4de34b0ce649","msg_type":"process","content":"write_file 执行成功","approve":null,"created":1776487002052}
 
-data: {"msg_id":"f0321e7e-9407-4f5d-99fe-ab10bfa1583f","msg_type":"process","content":"task 执行结果: 已成功将内容 \"hello\" 写入文件 hello.txt。","approve":null,"created":1776487002879}
+data: {"msg_id":"f0321e7e-9407-4f5d-99fe-ab10bfa1583f","msg_type":"process","content":"task 执行成功","approve":null,"created":1776487002879}
 
 data: {"msg_id":"lc_run--019d9ee0-7302-7b41-b9ac-4e13dec9e2f9","msg_type":"normal","content":"已经","approve":null,"created":1776487003554}
 
