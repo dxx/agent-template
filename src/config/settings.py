@@ -5,27 +5,28 @@ from pydantic import Field
 from pathlib import Path
 from enum import StrEnum
 
+
 class AppEnv(StrEnum):
-    DEFAULT = "default"
     DEV = "dev"
     PROD = "prod"
 
 APP_ENV = os.getenv("APP_ENV")
 
 if not APP_ENV:
-    os.environ["APP_ENV"] = "default"
-    APP_ENV = "default"
+    os.environ["APP_ENV"] = AppEnv.DEV.value
+    APP_ENV = AppEnv.DEV.value
 
 APP_ENV = APP_ENV.strip()
 
 if APP_ENV not in (item.value for item in AppEnv):
     raise ValueError(f"APP_ENV is incorrect")
 
-env_file = ".env" if APP_ENV == "default" else f".env.{APP_ENV}"
-
 # 从当前模块往上找到 src，和 src 同级别，.env 文件和 src 目录同级
 path = Path(__file__).resolve().parent.parent.parent
-env_path = path.joinpath(env_file)
+
+env_path = path.joinpath(f".env.{APP_ENV}")
+default_env_path = path.joinpath(".env")
+
 
 class Settings(BaseSettings):
     app_env: str
@@ -49,7 +50,7 @@ class Settings(BaseSettings):
     postgres_memory_conn_str: str = Field(validation_alias="POSTGRES_MEMORY_CONN_STR")
 
     model_config = SettingsConfigDict(
-        env_file=env_path,
+        env_file=[default_env_path, env_path],
         env_file_encoding="utf-8",
         extra="ignore",
     )
