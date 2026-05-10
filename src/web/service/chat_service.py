@@ -178,7 +178,7 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
         return ChatResponse(
             msg_id=message.id if message.id else str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
-            content="调用: " + "、".join(tool_names),
+            content="调用 " + "、".join(tool_names),
             created=int(datetime.now().timestamp() * 1000),
         )
      # 工具消息
@@ -186,7 +186,7 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
         return ChatResponse(
             msg_id=message.id if message.id else str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
-            content=f"{message.name} 执行结果: {message.content}",
+            content=f"{message.name} 执行{"成功" if message.status == "success" else "失败"}",
             created=int(datetime.now().timestamp() * 1000),
         )
     return None
