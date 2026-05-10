@@ -6,7 +6,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from web.api import health_router, chat_router, message_router
 from web.middleware import ChatMiddleware, AuthMiddleware
-from web.schemas import ApiResult, CODE_ERROR, CODE_HTTP_ERROR, CODE_VALIDATION_ERROR
+from web.schemas import ApiResult, CODE_ERROR, CODE_VALIDATION_ERROR
 from exception import SystemException
 from log import get_logger
 from config.settings import get_settings
@@ -74,7 +74,7 @@ async def http_exception_handler(request, exc: StarletteHTTPException):
         status_code=exc.status_code,
         media_type="application/json;charset=UTF-8",
         content=json_util.to_json(
-            ApiResult(code=CODE_HTTP_ERROR, message=error_detail)
+            ApiResult(code=exc.status_code, message=error_detail)
         ),
     )
 
@@ -111,7 +111,7 @@ async def system_exception_handler(request: Request, exc: SystemException):
         exc_info=exc,
     )
     return PlainTextResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        status_code=status.HTTP_200_OK,
         media_type="application/json;charset=UTF-8",
         content=json_util.to_json(ApiResult(code=CODE_ERROR, message=error_detail)),
     )

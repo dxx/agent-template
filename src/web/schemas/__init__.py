@@ -1,9 +1,9 @@
 from web.schemas.api_code import (
     CODE_SUCCESS,
-    CODE_ERROR,
-    CODE_HTTP_ERROR,
-    CODE_UNAUTHORIZED,
+    CODE_FAILURE,
     CODE_VALIDATION_ERROR,
+    CODE_ERROR,
+    CODE_UNAUTHORIZED,
 )
 from web.schemas.api import ApiResult, HealthResponse
 from web.schemas.chat import (
@@ -34,8 +34,8 @@ __all__ = [
     "Message",
     "MessageResponse",
     "CODE_SUCCESS",
-    "CODE_ERROR",
-    "CODE_HTTP_ERROR",
-    "CODE_UNAUTHORIZED",
+    "CODE_FAILURE",
     "CODE_VALIDATION_ERROR",
+    "CODE_ERROR",
+    "CODE_UNAUTHORIZED",
 ]
