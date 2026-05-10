@@ -95,8 +95,9 @@ agent-template/
 │   └── message_api.http        # 消息 API 测试文件
 ├── pyproject.toml              # 项目配置
 ├── .env.example                # 环境变量示例
-├── .env.dev.example            # 开发环境变量示例
-├── .env.prod.example           # 生产环境变量示例
+├── .env                        # 公共环境变量
+├── .env.dev                    # 开发环境变量
+├── .env.prod                   # 生产环境变量
 ├── .python-version             # Python 版本
 ├── LICENSE
 └── README.md
@@ -225,12 +226,16 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 - `tests/chat_api.http` - 对话 API 测试
 - `tests/message_api.http` - 消息管理 API 测试
 
+
 ## 环境配置
 
-项目提供三套环境配置示例文件：
-- `.env.example` - 默认配置
-- `.env.dev.example` - 开发环境配置示例
-- `.env.prod.example` - 生产环境配置示例
+项目提供三套环境配置文件：
+- `.env`      - 公共配置
+- `.env.dev`  - 开发环境配置
+- `.env.prod` - 生产环境配置
+
+可增加额外的环境配置，配置文件名格式: `.env.环境名称`，然后在 `config/settings.py` 中增加对应的代码。
+
 
 ### 环境变量说明
 
