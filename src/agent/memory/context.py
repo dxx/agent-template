@@ -4,3 +4,4 @@ from dataclasses import dataclass
 class AppAgentContext:
     """Agent 应用上下文"""
     user_id: str
+    chat_id: str

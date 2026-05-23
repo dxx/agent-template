@@ -1,21 +1,24 @@
-from typing import Any
 from langchain_core.messages import AnyMessage, AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 
-from agent.memory import (
+from agent.subagents import (
     get_checkpointer,
     get_store,
+    get_message_record_middleware,
 )
+from agent.middleware.message_record import MessageRecord
 from web.session import format_thread_id, generate_chat_id
 from web.schemas import Message, MessageResponse
 from exception import SystemException
 
-_checkpointer = get_checkpointer()
-_store = get_store()
 
 _NAMESPACE_CHAT_ID = ("user_chat_id",)
 
 _MAX_CHAT_COUNT = 10
+
+_checkpointer = get_checkpointer()
+_store = get_store()
+_message_record = get_message_record_middleware()
 
 
 async def create_chat_id(user_id: str) -> str:
@@ -45,10 +48,10 @@ async def is_chat_id_exists(user_id: str, chat_id: str) -> bool:
 
 async def get_chat_message_list(user_id: str, chat_id: str) -> list[Message]:
     """获取指定对话的消息列表（转换为 Message schema）"""
-    raw_messages = await get_chat_messages(user_id, chat_id)
+    raw_messages = await _message_record.get_history(user_id, chat_id)
     messages = []
     for msg in raw_messages:
-        converted = _convert_to_message(msg)
+        converted = _convert_to_message_record(msg)
         if converted:
             messages.append(converted)
     return messages
@@ -68,8 +71,11 @@ async def get_all_chat_messages(user_id: str) -> list[MessageResponse]:
 
 async def delete_chat_messages(user_id: str, chat_id: str) -> bool:
     """删除指定对话的所有消息"""
+    # 从 message_record 中清除消息历史
+    await _message_record.clear_history(user_id, chat_id)
+
     # 从 checkpointer 中删除消息
-    thread_id = format_thread_id(chat_id, user_id)
+    thread_id = format_thread_id(user_id, chat_id)
     await _checkpointer.adelete_thread(thread_id)
 
     # 从用户的 chat_ids 列表中移除该 chat_id
@@ -90,7 +96,7 @@ async def delete_all_chat_messages(user_id: str) -> bool:
 
     # 删除每个对话的消息
     for chat_id in chat_ids:
-        thread_id = format_thread_id(chat_id, user_id)
+        thread_id = format_thread_id(user_id, chat_id)
         await _checkpointer.adelete_thread(thread_id)
 
     # 删除用户的 chat_ids 记录
@@ -98,23 +104,6 @@ async def delete_all_chat_messages(user_id: str) -> bool:
     await _store.adelete(_NAMESPACE_CHAT_ID, key)
 
     return True
-
-
-async def get_chat_messages(user_id: str, chat_id: str) -> list[AnyMessage]:
-    """从 checkpointer 获取指定用户的对话消息记录"""
-
-    thread_id = format_thread_id(chat_id, user_id)
-    config = RunnableConfig(configurable={"thread_id": thread_id})
-
-    checkpoint_tuple = await _checkpointer.aget_tuple(config)
-
-    if checkpoint_tuple:
-        checkpoint = checkpoint_tuple.checkpoint
-        if checkpoint:
-            messages = checkpoint.get("channel_values", {}).get("messages", [])
-            return messages
-
-    return []
 
 
 async def _check_max_chat_count(user_id: str) -> tuple[bool, int]:
@@ -141,20 +130,16 @@ async def _record_chat_id(user_id: str, chat_id: str):
         await _store.aput(_NAMESPACE_CHAT_ID, key, {"chat_ids": [chat_id]})
 
 
-def _convert_to_message(any_msg: AnyMessage) -> Message | None:
-    """将 AnyMessage 转换为 Message schema"""
-    if isinstance(any_msg, HumanMessage):
-        return Message(
-            message_id=any_msg.id if any_msg.id else "",
-            message_type="user",
-            content=any_msg.text,
-        )
-    elif isinstance(any_msg, AIMessage):
-        if not any_msg.text:
-            return None
-        return Message(
-            message_id=any_msg.id if any_msg.id else "",
-            message_type="agent",
-            content=any_msg.text,
-        )
-    return None
+def _convert_to_message_record(msg: MessageRecord) -> Message | None:
+    """将 MessageRecord 转换为 Message schema"""
+    msg_type = msg.get("message_type", "")
+    if hasattr(msg_type, "value"):
+        type_value: str = msg_type.value
+    else:
+        type_value = str(msg_type)
+    return Message(
+        message_id=msg.get("message_id", ""),
+        message_type=type_value,  # type: ignore[arg-type]
+        content=msg.get("content", ""),
+        created=msg.get("timestamp", 0),
+    )

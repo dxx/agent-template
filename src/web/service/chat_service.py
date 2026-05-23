@@ -40,11 +40,11 @@ async def chat_response(app_state: AppState, request: ChatRequest) -> AsyncItera
         **state
     }
 
-    thread_id = format_thread_id(app_state.chat_id, app_state.user_id)
+    thread_id = format_thread_id(app_state.user_id, app_state.chat_id)
 
     config = RunnableConfig(configurable={"thread_id": thread_id})
 
-    context = AppAgentContext(user_id=app_state.user_id)
+    context = AppAgentContext(user_id=app_state.user_id, chat_id=app_state.chat_id)
 
     resume = _resume(decision)
 
