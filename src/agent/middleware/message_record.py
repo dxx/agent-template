@@ -1,4 +1,3 @@
-from collections.abc import Awaitable
 from datetime import datetime
 from enum import Enum
 from typing import Any, TypedDict, cast, override
@@ -24,7 +23,7 @@ class MessageRecord(TypedDict):
 
 
 class ChatMessageRecord(TypedDict):
-    """聊天消息记录，用于存储用户与模型的所有对话"""
+    """聊天消息记录，用于存储用户与 Agent 的所有对话"""
 
     user_id: str
     chat_id: str
