@@ -38,6 +38,7 @@ agent-template/
 │   │   │   └── model.py
 │   │   ├── middleware/         # 中间件
 │   │   │   ├── __init__.py     # 中间件导出
+│   │   │   ├── message_record.py  # 记录对话消息
 │   │   │   ├── system_time.py  # 系统时间注入
 │   │   │   └── prebuild/       # 预构建中间件
 │   │   │       ├── skills.py   # Skills 支持
@@ -127,11 +128,12 @@ agent-template/
 |--------|------|
 | `SubAgentMiddleware` | 子代理调度，通过 `task` 工具分发任务给子代理 |
 | `SkillsMiddleware` | 技能系统支持，动态加载 `skills/` 目录下的技能 |
-| `SystemTimeMiddleware` | 动态注入系统当前时间到提示词，帮助 Agent 准确回答时间相关问题 |
-| `SummarizationMiddleware` | 消息超过20条或token超过10000时自动摘要 |
+| `SummarizationMiddleware` | 消息超过30条或token超过10000时自动摘要 |
 | `ToolCallsPatchMiddleware` | 检查工具调用是否正确执行，补充缺失的 ToolMessage |
 | `HumanInTheLoopMiddleware` | 人工介入，支持 approve/reject 决策 |
 | `MCPClientMiddleware` | MCP Client 中间件，连接 MCP Server 并动态注入工具 |
+| `MessageRecordMiddleware` | 记录用户和 Agent 的对话消息 |
+| `SystemTimeMiddleware` | 动态注入系统当前时间到提示词，帮助 Agent 准确回答时间相关问题 |
 
 **子代理系统** (`subagents/`):
 

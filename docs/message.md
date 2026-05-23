@@ -6,17 +6,18 @@
 
 ### Message
 
-| 字段             | 类型                      | 说明                      |
-| -------------- | ----------------------- | ----------------------- |
-| `message_id`   | `str`                   | 消息 ID                   |
+| 字段       | 类型                      | 说明                      |
+| ---------- | ----------------------- | ----------------------- |
+| `message_id` | `str`                   | 消息 ID                   |
 | `message_type` | `Literal["user", "agent"]` | 消息类型：user=用户消息，agent=Agent 消息 |
-| `content`      | `str`                   | 消息内容                    |
+| `content`  | `str`                   | 消息内容                    |
+| `created`  | `int`                   | 创建时间戳（毫秒）              |
 
 ### MessageResponse
 
-| 字段         | 类型              | 说明    |
-| ---------- | --------------- | ----- |
-| `chat_id`  | `str`           | 对话 ID |
+| 字段      | 类型              | 说明    |
+| --------- | --------------- | ----- |
+| `chat_id` | `str`           | 对话 ID |
 | `messages` | `list[Message]` | 消息列表  |
 
 ## API 接口
@@ -62,12 +63,14 @@ user-token: user_123
                 {
                     "message_id": "msg_001",
                     "message_type": "user",
-                    "content": "你好"
+                    "content": "你好",
+                    "created": 1747988400000
                 },
                 {
                     "message_id": "msg_002",
                     "message_type": "agent",
-                    "content": "你好，有什么可以帮你的？"
+                    "content": "你好，有什么可以帮你的？",
+                    "created": 1747988405000
                 }
             ]
         }
@@ -96,7 +99,8 @@ user-token: user_123
         {
             "message_id": "msg_001",
             "message_type": "user",
-            "content": "你好"
+            "content": "你好",
+            "created": 1747988400000
         }
     ]
 }
@@ -142,8 +146,22 @@ user-token: user_123
 
 ## 存储
 
-- 用户对话 ID 列表存储在 `store` 中，namespace 为 `("user_chat_id",)`，key 为 `user_id`
-- 消息内容存储在 `checkpointer` 中，通过 `thread_id = format_thread_id(chat_id, user_id)` 关联
+消息通过 `MessageRecordMiddleware` 中间件记录，存储在 `BaseStore` 中。
+
+### 存储结构
+
+- **namespace**: 可配置，默认为 `("message_history",)`
+- **key**: 格式为 `{user_id}:{chat_id}`，从 `runtime.context` 获取
+- **value**: `ChatMessageRecord` 对象
+
+### 中间件工作流程
+
+1. **before_agent**: 记录用户最新的 HumanMessage
+2. **after_agent**: 记录模型最新的 AIMessage
+
+### 限制条件
+
+- `runtime.context` 必须包含 `user_id` 和 `chat_id` 属性
 
 ## 限制
 
