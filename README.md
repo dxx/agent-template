@@ -116,8 +116,6 @@ agent-template/
   - `get_store()`: 获取当前 store（默认内存存储）
 - `AppAgentContext`: 用户上下文，包含 `user_id`
 - `AppAgentState`: Agent 状态，继承自 `AgentState`，包含 `sub_agent_calls` 记录调用的子代理
-- `async_postgres_checkpointer`: PostgreSQL 检查点，支持会话恢复
-- `async_postgres_store`: PostgreSQL 存储，用于持久化数据
 - `init_postgres_checkpointer()` / `close_postgres_checkpointer()`: 初始化和关闭 Checkpointer 连接池
 - `init_postgres_store()` / `close_postgres_store()`: 初始化和关闭 Store 连接池
 - 默认使用内存存储 (`InMemorySaver` 和 `InMemoryStore`)，生产环境可切换为 PostgreSQL
