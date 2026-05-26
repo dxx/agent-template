@@ -10,7 +10,6 @@ from web.schemas import ApiResult, CODE_ERROR, CODE_VALIDATION_ERROR
 from exception import SystemException
 from log import get_logger
 from config.settings import get_settings
-from utils import json_util
 from agent.memory import (
     init_postgres_checkpointer,
     close_postgres_checkpointer,
@@ -73,9 +72,7 @@ async def http_exception_handler(request, exc: StarletteHTTPException):
     return PlainTextResponse(
         status_code=exc.status_code,
         media_type="application/json;charset=UTF-8",
-        content=json_util.to_json(
-            ApiResult(code=exc.status_code, message=error_detail)
-        ),
+        content=ApiResult(code=exc.status_code, message=error_detail).model_dump_json(),
     )
 
 
@@ -95,9 +92,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return PlainTextResponse(
         status_code=status.HTTP_200_OK,
         media_type="application/json;charset=UTF-8",
-        content=json_util.to_json(
-            ApiResult(code=CODE_VALIDATION_ERROR, message=errors)
-        ),
+        content=ApiResult(code=CODE_VALIDATION_ERROR, message=errors).model_dump_json(),
     )
 
 
@@ -113,7 +108,7 @@ async def system_exception_handler(request: Request, exc: SystemException):
     return PlainTextResponse(
         status_code=status.HTTP_200_OK,
         media_type="application/json;charset=UTF-8",
-        content=json_util.to_json(ApiResult(code=CODE_ERROR, message=error_detail)),
+        content=ApiResult(code=CODE_ERROR, message=error_detail).model_dump_json(),
     )
 
 
@@ -129,7 +124,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     return PlainTextResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         media_type="application/json;charset=UTF-8",
-        content=json_util.to_json(ApiResult(code=CODE_ERROR, message=errors)),
+        content=ApiResult(code=CODE_ERROR, message=errors).model_dump_json(),
     )
 
 

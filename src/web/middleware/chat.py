@@ -6,8 +6,6 @@ from fastapi.responses import PlainTextResponse
 from web.schemas import ApiResult, CODE_VALIDATION_ERROR, AppState
 from web.service.message_service import is_chat_id_exists
 
-from utils import json_util
-
 
 _NEED_CHAT_ID_PATHS = ["/chat/stream"]
 
@@ -37,7 +35,7 @@ def _validation_error_response(message: str) -> PlainTextResponse:
     return PlainTextResponse(
         status_code=status.HTTP_200_OK,
         media_type="application/json;charset=UTF-8",
-        content=json_util.to_json(
-            ApiResult(code=CODE_VALIDATION_ERROR, message=message)
-        ),
+        content=ApiResult(
+                code=CODE_VALIDATION_ERROR, message=message
+            ).model_dump_json(),
     )

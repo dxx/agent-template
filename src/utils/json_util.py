@@ -5,7 +5,7 @@ from typing import Any
 
 
 def to_json(obj: Any) -> str:
-    return json.dumps(obj, ensure_ascii=False, indent=2, default=_default)
+    return json.dumps(obj, ensure_ascii=False, separators=(",", ":"), default=_default)
 
 
 def from_json(json_str: str) -> Any:
