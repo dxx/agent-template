@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field, model_validator
 from enum import StrEnum
 from typing import Literal
@@ -94,4 +95,4 @@ class ChatResponse[T](BaseModel):
     )
     content: T | None = Field(default=None, description="对话响应内容")
     approve: Approve | None = Field(default=None, description="审批内容")
-    created: int
+    created: int | None = Field(default_factory=lambda: int(datetime.now().timestamp() * 1000), description="创建时间戳（毫秒）")

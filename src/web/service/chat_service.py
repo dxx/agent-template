@@ -1,7 +1,5 @@
 import uuid
-
 from collections.abc import AsyncIterable
-from datetime import datetime
 from langchain_core.messages import AIMessage, ToolMessage, AnyMessage, AIMessageChunk
 from langgraph.types import Interrupt, Command
 from langchain_core.runnables import RunnableConfig
@@ -102,7 +100,6 @@ async def chat_response(app_state: AppState, request: ChatRequest) -> AsyncItera
             msg_id=str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.ERROR,
             content=f"{str(e)}",
-            created=int(datetime.now().timestamp() * 1000),
         )
 
 def _render_message_chunk(token: AIMessageChunk) -> ChatResponse | None:
@@ -140,7 +137,6 @@ def _render_message_chunk(token: AIMessageChunk) -> ChatResponse | None:
         return ChatResponse(
             msg_id= token.id if token.id else str(uuid.uuid4()),
             content=token.text,
-            created=int(datetime.now().timestamp() * 1000),
         )
     return None
 
@@ -179,7 +175,6 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
             msg_id=message.id if message.id else str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content="调用 " + "、".join(tool_names),
-            created=int(datetime.now().timestamp() * 1000),
         )
      # 工具消息
     if isinstance(message, ToolMessage):
@@ -187,7 +182,6 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
             msg_id=message.id if message.id else str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content=f"{message.name} 执行{"成功" if message.status == "success" else "失败"}",
-            created=int(datetime.now().timestamp() * 1000),
         )
     return None
 
@@ -237,7 +231,6 @@ def _render_interrupt(interrupt: Interrupt) -> ChatResponse:
         msg_id=str(uuid.uuid4()),
         msg_type=ResponseMsgTypeEnum.APPROVE,
         approve=Approve(approve_id=interrupt_id, items=approve_items),
-        created=int(datetime.now().timestamp() * 1000)
     )
 
 def _resume(decision: Decision | None) -> dict | None:

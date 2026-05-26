@@ -10,7 +10,7 @@ class Message(BaseModel):
     message_id: str = Field(default="", description="消息 ID")
     message_type: MessageType = Field(description="消息类型: user、agent")
     content: str = Field(description="消息内容")
-    created: int = Field(default=0, description="创建时间戳（毫秒）")
+    created: int = Field(description="创建时间戳（毫秒）")
 
 
 class MessageResponse(BaseModel):
