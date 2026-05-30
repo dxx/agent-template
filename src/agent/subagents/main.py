@@ -8,6 +8,7 @@ from agent.middleware import (
     SummarizationMiddleware,
     SystemTimeMiddleware,
     ToolCallsPatchMiddleware,
+    ToolErrorHandlingMiddleware,
     MessageRecordMiddleware,
 )
 from agent.memory import (
@@ -78,6 +79,7 @@ def create_main_agent():
                 summary_prompt=summarization.DEFAULT_SUMMARY_PROMPT + "\n<note>请用中文总结</note>",
             ),
             ToolCallsPatchMiddleware(),
+            ToolErrorHandlingMiddleware(),
             _message_record_middleware, # type: ignore[arg-type]
         ]
     )
