@@ -31,8 +31,9 @@ class ToolErrorHandlingMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         """初始化工具调用错误处理中间件。
 
         Args:
-            error_content: 工具调用失败时返回给大模型的错误内容。可以是固定字符串，
-                也可以是接收 Exception 并返回字符串的回调函数。
+            error_content: 工具调用失败时返回给大模型的错误内容。传入字符串时作为
+                固定错误内容返回；传入回调函数时，会以捕获到的 `Exception` 作为参数
+                调用并返回其结果；不传时使用默认错误描述。
         """
         self.error_content = error_content
 

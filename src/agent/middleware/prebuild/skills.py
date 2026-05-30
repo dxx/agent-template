@@ -63,17 +63,13 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
             self, dirs: list[str],
             grouped_tools: dict[str, list[BaseTool]] = {}
         ):
-        """初始化和生成技能提示词
+        """初始化 Skills 中间件并生成技能提示词。
 
-        self.skills: list[Skill] = [
-            {
-                "name": "greet",
-                "description": "如何和用户打招呼",
-                "content": "用户打招呼的时候说类似 '你好'、'hello', 直接礼貌的回复"
-            }
-        ]
-    
-        grouped_tools: 分组工具，用于动态加载工具。当使用了 skill 后匹配对应的工具然后传输给大模型
+        Args:
+            dirs: 技能目录列表。每个目录下的子目录如果包含 `SKILL.md`，会被解析为
+                一个可加载技能。
+            grouped_tools: 按技能名称分组的工具列表。当模型加载某个 skill 后，
+                中间件会把对应工具动态加入模型可用工具集合。
         """
 
         if not dirs:

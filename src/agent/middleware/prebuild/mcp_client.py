@@ -39,13 +39,14 @@ class MCPClientMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         tool_interceptors: list[ToolCallInterceptor] | None = None,
         ignore_tools: list[str] | None = None,
     ):
-        """初始化 MCP Client 中间件
+        """初始化 MCP Client 中间件。
 
         Args:
-            mcp_config: MultiServerMCPClient 原始配置字典
-            callbacks: 用于处理通知和事件的可选回调函数。
-            tool_interceptors: 可选的工具调用拦截器列表，用于修改请求与响应。
-            ignore_tools: 忽略的工具名称，以 server name 加 _ 开头，如 `weather_search`。
+            mcp_config: MCP Server 连接配置，直接传递给 `MultiServerMCPClient`。
+            callbacks: MCP 客户端回调函数，用于处理通知、日志和事件。
+            tool_interceptors: MCP 工具调用拦截器列表，用于修改工具请求或响应。
+            ignore_tools: 需要忽略的 MCP 工具名称列表。工具名称包含 server name 前缀，
+                例如 `weather_search`。
         """
         self.mcp_config = mcp_config
 

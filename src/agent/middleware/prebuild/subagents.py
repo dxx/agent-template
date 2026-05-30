@@ -218,6 +218,14 @@ class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
             sub_agents: list[SubAgent],
             system_prompt: str | None = _TASK_SYSTEM_PROMPT
         ):
+        """初始化 Sub Agent 中间件。
+
+        Args:
+            sub_agents: 可被 `task` 工具调度的子代理列表。每个子代理必须实现
+                `get_name()` 和 `get_description()`。
+            system_prompt: 注入到模型系统提示词中的子代理使用说明。传入 `None` 时，
+                不追加子代理调度提示词，但仍会注册 `task` 工具。
+        """
         self.system_prompt = system_prompt
         self.tools = [
             _create_task_tool(sub_agents)

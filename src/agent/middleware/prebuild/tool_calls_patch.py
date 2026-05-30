@@ -31,6 +31,15 @@ logger = get_logger(__name__)
 
 class ToolCallsPatchMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
 
+    def __init__(self):
+        """初始化 Tool Calls 修复中间件。
+
+        Args:
+            无参数。该中间件只根据 state 中的历史消息检查并补齐缺失的
+            `ToolMessage`。
+        """
+        pass
+
     @override
     def before_agent(
         self, state: AgentState[Any], runtime: Runtime[ContextT]
