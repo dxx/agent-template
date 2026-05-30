@@ -42,9 +42,10 @@ agent-template/
 │   │   │   ├── system_time.py  # 系统时间注入
 │   │   │   └── prebuild/       # 预构建中间件
 │   │   │       ├── skills.py   # Skills 支持
-│   │   │       ├── subagents.py # 子代理支持
-│   │   │       ├── tool_calls_patch.py # 工具调用检查
-│   │   │       └── mcp_client.py # MCP Client 中间件
+│   │   │       ├── subagents.py           # 子代理支持
+│   │   │       ├── tool_calls_patch.py    # 工具调用检查
+│   │   │       ├── tool_error_handling.py # 工具调用错误处理
+│   │   │       └── mcp_client.py          # MCP Client 中间件
 │   │   ├── memory/             # 状态管理
 │   │   │   ├── entry.py        # Checkpointer/Store 入口
 │   │   │   ├── state.py        # Agent 状态定义
@@ -128,6 +129,7 @@ agent-template/
 | `SkillsMiddleware` | 技能系统支持，动态加载 `skills/` 目录下的技能 |
 | `SummarizationMiddleware` | 消息超过30条或token超过10000时自动摘要 |
 | `ToolCallsPatchMiddleware` | 检查工具调用是否正确执行，补充缺失的 ToolMessage |
+| `ToolErrorHandlingMiddleware` | 工具调用错误时返回 ToolMessage，让 agent 继续运行 |
 | `HumanInTheLoopMiddleware` | 人工介入，支持 approve/reject 决策 |
 | `MCPClientMiddleware` | MCP Client 中间件，连接 MCP Server 并动态注入工具 |
 | `MessageRecordMiddleware` | 记录用户和 Agent 的对话消息 |
