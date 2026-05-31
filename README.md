@@ -165,11 +165,11 @@ agent-template/
 
 | 路由任务代理 | 功能 |
 |--------------|------|
-| `RouterFileManagerAgent` | 文件管理（读取/写入），支持人工审批 |
-| `RouterResearchAgent` | 从多个信息源收集整理信息 |
-| `RouterWritingAgent` | 撰写高质量内容 |
-| `RouterReviewAgent` | 审核文本并提供改进建议 |
-| `RouterGreetAgent` | 处理问候和基础交互 |
+| `FileManagerAgent` | 文件管理（读取/写入），支持人工审批 |
+| `ResearchAgent` | 从多个信息源收集整理信息 |
+| `WritingAgent` | 撰写高质量内容 |
+| `ReviewAgent` | 审核文本并提供改进建议 |
+| `GreetAgent` | 处理问候和基础交互 |
 
 **人工介入模块** (`hitl/`):
 - `approve.py`: 审批内容生成，将工具调用转换为用户可读的审批信息
@@ -320,38 +320,6 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 4. 内部路由图根据代理描述选择一个或多个 `RouteTaskAgent`
 5. 多个任务代理可并发执行
 6. 单个结果直接返回，多个结果由合并模型整理为 `final_result`
-
-示例创建方式：
-
-```python
-from langchain.agents import create_agent
-
-from agent.llm import create_chat_model
-from agent.middleware.prebuild.router_agent import RouteAgentMiddleware
-from agent.router.file_manager import RouterFileManagerAgent
-from agent.router.greet import RouterGreetAgent
-from agent.router.research import RouterResearchAgent
-from agent.router.review import RouterReviewAgent
-from agent.router.writing import RouterWritingAgent
-
-route_agent_middleware = RouteAgentMiddleware(
-    name="router_agent",
-    router_model=create_chat_model(enable_thinking=False),
-    agents=[
-        RouterWritingAgent(),
-        RouterResearchAgent(),
-        RouterReviewAgent(),
-        RouterGreetAgent(),
-        RouterFileManagerAgent(),
-    ],
-)
-
-agent = create_agent(
-    name="router_main_agent",
-    model=create_chat_model(enable_thinking=False),
-    middleware=[route_agent_middleware],
-)
-```
 
 ## 人工审批流程
 
