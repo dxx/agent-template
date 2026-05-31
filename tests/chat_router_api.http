@@ -1,0 +1,22 @@
+### 对话
+POST http://localhost:8000/chat/router/stream
+Content-Type: application/json
+Connection: keep-alive
+user-token: user_123
+# 通过 /message/chat/create 创建获得，同一轮对话里面保持相同的 chat-id
+chat-id: chat_710822f0-c2d2-4cd8-bdb3-a6cd3301941b
+
+{
+  "content": "你今天吃了吗"
+}
+
+### 访问 User agent
+POST http://localhost:8000/chat/router/stream
+Content-Type: application/json
+Connection: keep-alive
+user-token: user_123
+chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
+
+{
+  "content": "我叫 Alice，我的邮箱是 alice@example.com，爱好学习、写代码"
+}
