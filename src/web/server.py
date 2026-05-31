@@ -4,7 +4,7 @@ from fastapi.responses import PlainTextResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from web.api import health_router, chat_router, message_router
+from web.api import health_router, main_chat_router, route_chat_router, message_router
 from web.middleware import ChatMiddleware, AuthMiddleware
 from web.schemas import ApiResult, CODE_ERROR, CODE_VALIDATION_ERROR
 from exception import SystemException
@@ -133,5 +133,6 @@ app.add_middleware(ChatMiddleware)
 app.add_middleware(AuthMiddleware)
 
 app.include_router(health_router)
-app.include_router(chat_router)
+app.include_router(main_chat_router)
+app.include_router(route_chat_router)
 app.include_router(message_router)

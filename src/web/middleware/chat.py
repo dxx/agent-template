@@ -7,7 +7,7 @@ from web.schemas import ApiResult, CODE_VALIDATION_ERROR, AppState
 from web.service.message_service import is_chat_id_exists
 
 
-_NEED_CHAT_ID_PATHS = ["/chat/stream"]
+_NEED_CHAT_ID_PATHS = ["/chat/stream", "/chat/router/stream"]
 
 
 class ChatMiddleware(BaseHTTPMiddleware):
