@@ -2,6 +2,21 @@
 
 提供一个 `invoke_router_agent` 工具，由主 Agent 主动调用后，再通过内部
 StateGraph 路由到多个任务 Agent 执行。
+
+`RouteAgentMiddleware` 的内部流程：
+
+1. 向主 Agent 注册 `invoke_router_agent` 工具
+2. 工具从当前 `runtime.state["messages"]` 中提取最近一条用户输入
+3. 内部 `_RouteGraphAgent` 使用 `StateGraph` 执行 `router → call_agent → join`
+4. `router` 节点用 LLM 生成结构化 `RouterResult`
+5. `call_agent` 节点根据路由结果调用一个或多个 `RouteTaskAgent`
+6. `join` 节点返回单个 `final_result`
+
+路由任务代理通过 `RouteTaskAgent` 包装普通 LangChain/LangGraph agent，必须提供：
+
+- `name`: 路由模型可选择的代理名称
+- `description`: 路由模型判断何时使用该代理的描述
+- `agent`: 实际执行任务的 Runnable
 """
 
 from collections.abc import Awaitable, Callable, Sequence
@@ -35,6 +50,8 @@ from agent.memory.router_state import (
 ROUTER_TOOL_NAME = "invoke_router_agent"
 
 _ROUTER_SYSTEM_PROMPT = """
+## Router(路由任务)
+
 你可以使用 `invoke_router_agent` 工具通过路由代理处理用户问题。
 
 当用户请求需要选择合适的专业代理、拆分给多个代理协作，或者你不确定应该由哪个
