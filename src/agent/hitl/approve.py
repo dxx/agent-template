@@ -38,7 +38,8 @@ def default_descript_callable(
         [
             SystemMessage(content=sys_prompt),
             HumanMessage(content=user_prompt.format(content=content))
-        ]
+        ],
+        config={"tags": ["nostream"]}
     )
 
     return ai_message.text
