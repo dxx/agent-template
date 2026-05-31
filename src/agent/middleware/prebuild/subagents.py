@@ -1,13 +1,12 @@
 """Sub Agent 中间件
 使用一个 task 工具分发任务给子 Agent 执行任务
 """
-from abc import ABC, abstractmethod
 from collections.abc import Awaitable
-from typing import Any, override, Annotated, Callable
+from typing import Any, override, Annotated, Callable, Literal
 from langchain.messages import ToolMessage
-from langgraph.types import Command
+from langgraph.types import Command, StreamMode
 from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import StructuredTool
 from langchain.tools import ToolRuntime
 from langchain_core.messages import (
@@ -60,95 +59,58 @@ _TASK_TOOL_DESCRIPTION = """
 3.尽可能的使用多个代理，提高性能。在单个消息中使用多种用途的工具
 """
 
-class SubAgent(ABC):
+class SubAgent:
     """SubAgent 基类"""
 
-    def __init__(self):
-        self._agent: Runnable | None = None
+    def __init__(self, *, name: str, description: str, agent: Runnable[Any, Any]):
+        self.name = name
+        self.description = description
+        self._agent = agent
 
-    def run(
-        self, user_input: str,
-        runtime: ToolRuntime[Any, AgentState]
-    ) -> str | Command:
-        if self._agent is None:
-            raise ValueError("_agent not initialized")
-
-        inputs = _validate_and_prepare_state(
-            user_input=user_input, runtime=runtime
-        )
-
-        result = self._agent.invoke(
-            inputs,
-            context=runtime.context
-        )
-
-        (message_text, state_update) = _return_message_with_state_update(result)
-
-        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, None)
-        if sub_agent_calls != None:
-            # 存在 SUB_AGENT_CALLS_KEY 时进行更新
-            state_update[SUB_AGENT_CALLS_KEY] = [*sub_agent_calls, self.get_name()]
- 
-        return Command(update={
-                **state_update,
-                "messages": [
-                    # 返回工具消息
-                    ToolMessage(
-                        name=_TASK_TOOL_NAME,
-                        content=message_text,
-                        # 本次工具调用 ID
-                        tool_call_id=runtime.tool_call_id
-                    )
-                ]
-            }
-        )
-
-    async def arun(
-        self, user_input: str,
-        runtime: ToolRuntime[Any, AgentState]
-    ) -> str | Command:
-        if self._agent is None:
-            raise ValueError("_agent not initialized")
-
-        inputs = _validate_and_prepare_state(
-            user_input=user_input, runtime=runtime
-        )
-
-        result = await self._agent.ainvoke(
-            inputs,
-            context=runtime.context
-        )
-
-        (message_text, state_update) = _return_message_with_state_update(result)
-
-        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, None)
-        if sub_agent_calls != None:
-            # 存在 SUB_AGENT_CALLS_KEY 时进行更新
-            state_update[SUB_AGENT_CALLS_KEY] = [*sub_agent_calls, self.get_name()]
- 
-        return Command(update={
-                **state_update,
-                "messages": [
-                    # 返回工具消息
-                    ToolMessage(
-                        name=_TASK_TOOL_NAME,
-                        content=message_text,
-                        # 本次工具调用 ID
-                        tool_call_id=runtime.tool_call_id
-                    )
-                ]
-            }
-        )
-    
-    @abstractmethod
     def get_name(self) -> str:
-        """子代理的名称"""
-        pass
+        return self.name
 
-    @abstractmethod
     def get_description(self) -> str:
-        """子代理的描述。用来说明什么情况下使用该代理"""
-        pass
+        return self.description
+
+    def invoke(
+        self,
+        input: dict[str, Any] | Command[Any] | None,
+        config: RunnableConfig | None = None,
+        *,
+        context: Any | None = None,
+        stream_mode: StreamMode = "values",
+        version: Literal["v1", "v2"] = "v1",
+        **kwargs: Any,
+    ) -> dict[str, Any] | Any:
+        return self._agent.invoke(
+            input,
+            config=config,
+            context=context,
+            stream_mode=stream_mode,
+            version=version,
+            **kwargs,
+        )
+
+    async def ainvoke(
+        self,
+        input: dict[str, Any] | Command[Any] | None,
+        config: RunnableConfig | None = None,
+        *,
+        context: Any | None = None,
+        stream_mode: StreamMode = "values",
+        version: Literal["v1", "v2"] = "v1",
+        **kwargs: Any,
+    ) -> dict[str, Any] | Any:
+        return await self._agent.ainvoke(
+            input,
+            config=config,
+            context=context,
+            stream_mode=stream_mode,
+            version=version,
+            **kwargs,
+        )
+
 
 def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     """创建 Task 工具"""
@@ -163,7 +125,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
         agent_name = sub_agent.get_name()
         _subagent_registry[agent_name] = sub_agent
 
-    def _get_subagent(agent_name: str):
+    def _get_subagent(agent_name: str) -> SubAgent:
         if agent_name not in _subagent_registry:
             raise ValueError(f"Unknown agent: {agent_name}")
         return _subagent_registry[agent_name]
@@ -177,7 +139,37 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
 
         logger.info("Execute atask call subagent %s", agent_name)
 
-        return _get_subagent(agent_name).run(task_input, runtime)
+        agent = _get_subagent(agent_name)
+
+        inputs = _validate_and_prepare_state(
+            user_input=task_input, runtime=runtime
+        )
+
+        result = agent.invoke(
+            inputs,
+            context=runtime.context
+        )
+
+        (message_text, state_update) = _return_message_with_state_update(result)
+
+        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, None)
+        if sub_agent_calls != None:
+            # 存在 SUB_AGENT_CALLS_KEY 时进行更新
+            state_update[SUB_AGENT_CALLS_KEY] = [*sub_agent_calls, agent_name]
+ 
+        return Command(update={
+                **state_update,
+                "messages": [
+                    # 返回工具消息
+                    ToolMessage(
+                        name=_TASK_TOOL_NAME,
+                        content=message_text,
+                        # 本次工具调用 ID
+                        tool_call_id=runtime.tool_call_id
+                    )
+                ]
+            }
+        )
     
     async def atask(
         agent_name: Annotated[str, "代理名称。必须是工具描述中的代理名称"],
@@ -188,7 +180,37 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
 
         logger.info("Execute atask call subagent %s", agent_name)
 
-        return await _get_subagent(agent_name).arun(task_input, runtime)
+        agent = _get_subagent(agent_name)
+
+        inputs = _validate_and_prepare_state(
+            user_input=task_input, runtime=runtime
+        )
+
+        result = await agent.ainvoke(
+            inputs,
+            context=runtime.context
+        )
+
+        (message_text, state_update) = _return_message_with_state_update(result)
+
+        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, None)
+        if sub_agent_calls != None:
+            # 存在 SUB_AGENT_CALLS_KEY 时进行更新
+            state_update[SUB_AGENT_CALLS_KEY] = [*sub_agent_calls, agent_name]
+ 
+        return Command(update={
+                **state_update,
+                "messages": [
+                    # 返回工具消息
+                    ToolMessage(
+                        name=_TASK_TOOL_NAME,
+                        content=message_text,
+                        # 本次工具调用 ID
+                        tool_call_id=runtime.tool_call_id
+                    )
+                ]
+            }
+        )
     
     descriptions = []
     
