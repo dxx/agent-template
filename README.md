@@ -122,7 +122,7 @@ agent-template/
 
 **主 Agent** - 通过 `create_main_agent()` 创建（位于 `subagents/main.py`），负责整体对话协调，通过 `task` 工具调度子代理。
 
-**路由 Agent** - 通过 `create_router_agent()` 创建（位于 `router/agent.py`），使用 `RouteAgentMiddleware` 注册 `invoke_router_agent` 工具。主 Agent 调用该工具后，内部 `StateGraph` 会先根据用户输入选择一个或多个路由任务代理，再并发调用对应代理并合并结果。
+**路由 Agent** - 通过 `create_router_agent()` 创建（位于 `router/agent.py`），使用 `RouteAgentMiddleware` 注册 `route` 工具。主 Agent 调用该工具后，内部 `StateGraph` 会先根据用户输入选择一个或多个路由任务代理，再并发调用对应代理并合并结果。
 
 **状态与持久化** (`agent/memory/`):
 - `entry.py`: Checkpointer 和 Store 的统一入口
@@ -140,7 +140,7 @@ agent-template/
 | 中间件 | 功能 |
 |--------|------|
 | `SubAgentMiddleware` | 子代理调度，通过 `task` 工具分发任务给子代理 |
-| `RouteAgentMiddleware` | 路由代理调度，通过 `invoke_router_agent` 工具自动选择并调用路由任务代理 |
+| `RouteAgentMiddleware` | 路由代理调度，通过 `route` 工具自动选择并调用路由任务代理 |
 | `SkillsMiddleware` | 技能系统支持，动态加载 `skills/` 目录下的技能 |
 | `SummarizationMiddleware` | 消息超过30条或token超过10000时自动摘要 |
 | `ToolCallsPatchMiddleware` | 检查工具调用是否正确执行，补充缺失的 ToolMessage |
@@ -312,10 +312,10 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 
 ## 路由代理调度
 
-路由模式下，主 Agent 不直接决定子代理，而是调用 `invoke_router_agent` 工具交给路由图处理：
+路由模式下，主 Agent 不直接决定子代理，而是调用 `route` 工具交给路由图处理：
 
 1. 用户请求 → Router Main Agent 处理
-2. Router Main Agent 调用 `invoke_router_agent`
+2. Router Main Agent 调用 `route`
 3. 工具从当前消息历史提取用户输入，构造 `{"query": 用户输入}`
 4. 内部路由图根据代理描述选择一个或多个 `RouteTaskAgent`
 5. 多个任务代理可并发执行
