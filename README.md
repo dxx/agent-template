@@ -32,6 +32,13 @@ agent-template/
 │   │   │   ├── greet.py        # 问候代理
 │   │   │   ├── user.py         # 用户代理
 │   │   │   └── agent_enum.py   # 子代理枚举
+│   │   ├── router/             # 路由代理模块
+│   │   │   ├── agent.py        # 路由模式主 Agent 创建函数
+│   │   │   ├── file_manager.py # 路由文件管理代理
+│   │   │   ├── research.py     # 路由研究代理
+│   │   │   ├── writing.py      # 路由写作代理
+│   │   │   ├── review.py       # 路由审核代理
+│   │   │   └── greet.py        # 路由问候代理
 │   │   ├── hitl/               # 人工介入模块
 │   │   │   └── approve.py      # 审批内容生成
 │   │   ├── llm/                # LLM 模型封装
@@ -43,12 +50,14 @@ agent-template/
 │   │   │   └── prebuild/       # 预构建中间件
 │   │   │       ├── skills.py   # Skills 支持
 │   │   │       ├── subagents.py           # 子代理支持
+│   │   │       ├── router_agent.py        # 路由代理支持
 │   │   │       ├── tool_calls_patch.py    # 工具调用检查
 │   │   │       ├── tool_error_handling.py # 工具调用错误处理
 │   │   │       └── mcp_client.py          # MCP Client 中间件
 │   │   ├── memory/             # 状态管理
 │   │   │   ├── entry.py        # Checkpointer/Store 入口
 │   │   │   ├── state.py        # Agent 状态定义
+│   │   │   ├── router_state.py # 路由代理状态定义
 │   │   │   ├── context.py      # Agent 上下文定义
 │   │   │   ├── postgres_checkpointer.py  # Postgres Checkpointer
 │   │   │   └── postgres_store.py         # Postgres Store
@@ -64,6 +73,7 @@ agent-template/
 │   │   │   ├── __init__.py     # 路由模块导出
 │   │   │   ├── health.py       # 健康检查路由
 │   │   │   ├── chat.py         # 对话路由
+│   │   │   ├── chat_router.py  # 路由 Agent 对话路由
 │   │   │   └── message.py      # 消息管理路由
 │   │   ├── middleware/         # 中间件
 │   │   │   ├── auth.py         # 认证中间件
@@ -76,6 +86,7 @@ agent-template/
 │   │   │   └── state.py        # 应用状态模型
 │   │   ├── service/            # 服务层
 │   │   │   ├── chat_service.py # 对话服务
+│   │   │   ├── chat_router_service.py # 路由 Agent 对话服务
 │   │   │   └── message_service.py # 消息服务
 │   │   └── session/            # 会话管理
 │   │       ├── __init__.py
@@ -111,12 +122,15 @@ agent-template/
 
 **主 Agent** - 通过 `create_main_agent()` 创建（位于 `subagents/main.py`），负责整体对话协调，通过 `task` 工具调度子代理。
 
+**路由 Agent** - 通过 `create_router_agent()` 创建（位于 `router/agent.py`），使用 `RouteAgentMiddleware` 注册 `invoke_router_agent` 工具。主 Agent 调用该工具后，内部 `StateGraph` 会先根据用户输入选择一个或多个路由任务代理，再并发调用对应代理并合并结果。
+
 **状态与持久化** (`agent/memory/`):
 - `entry.py`: Checkpointer 和 Store 的统一入口
   - `get_checkpointer()`: 获取当前 checkpointer（默认内存存储）
   - `get_store()`: 获取当前 store（默认内存存储）
 - `AppAgentContext`: 用户上下文，包含 `user_id`
 - `AppAgentState`: Agent 状态，继承自 `AgentState`，包含 `sub_agent_calls` 记录调用的子代理
+- `RouterState`: 路由代理状态，包含 `query`、`routers`、`router`、`results` 和 `final_result`
 - `init_postgres_checkpointer()` / `close_postgres_checkpointer()`: 初始化和关闭 Checkpointer 连接池
 - `init_postgres_store()` / `close_postgres_store()`: 初始化和关闭 Store 连接池
 - 默认使用内存存储 (`InMemorySaver` 和 `InMemoryStore`)，生产环境可切换为 PostgreSQL
@@ -126,6 +140,7 @@ agent-template/
 | 中间件 | 功能 |
 |--------|------|
 | `SubAgentMiddleware` | 子代理调度，通过 `task` 工具分发任务给子代理 |
+| `RouteAgentMiddleware` | 路由代理调度，通过 `invoke_router_agent` 工具自动选择并调用路由任务代理 |
 | `SkillsMiddleware` | 技能系统支持，动态加载 `skills/` 目录下的技能 |
 | `SummarizationMiddleware` | 消息超过30条或token超过10000时自动摘要 |
 | `ToolCallsPatchMiddleware` | 检查工具调用是否正确执行，补充缺失的 ToolMessage |
@@ -145,6 +160,16 @@ agent-template/
 | `ReviewAgent` | 审核文本并提供改进建议 |
 | `GreetAgent` | 处理问候和基础交互 |
 | `UserAgent` | 用户相关操作代理 |
+
+**路由代理系统** (`router/`):
+
+| 路由任务代理 | 功能 |
+|--------------|------|
+| `RouterFileManagerAgent` | 文件管理（读取/写入），支持人工审批 |
+| `RouterResearchAgent` | 从多个信息源收集整理信息 |
+| `RouterWritingAgent` | 撰写高质量内容 |
+| `RouterReviewAgent` | 审核文本并提供改进建议 |
+| `RouterGreetAgent` | 处理问候和基础交互 |
 
 **人工介入模块** (`hitl/`):
 - `approve.py`: 审批内容生成，将工具调用转换为用户可读的审批信息
@@ -178,6 +203,7 @@ agent-template/
 |------|------|------|
 | `/health` | GET | 健康检查 |
 | `/chat/stream` | POST | SSE 流式对话（需认证） |
+| `/chat/router/stream` | POST | SSE 路由 Agent 流式对话（需认证） |
 | `/test/chat/stream` | GET | 测试对话（无需认证） |
 | `/message/chat/create` | POST | 创建新对话 |
 | `/message/all` | GET | 获取用户所有对话 |
@@ -283,6 +309,49 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 3. 通过 `task(agent_name, task_input)` 分发给对应子代理
 4. 子代理执行完成后返回结果
 5. 主 Agent 整合结果返回给用户
+
+## 路由代理调度
+
+路由模式下，主 Agent 不直接决定子代理，而是调用 `invoke_router_agent` 工具交给路由图处理：
+
+1. 用户请求 → Router Main Agent 处理
+2. Router Main Agent 调用 `invoke_router_agent`
+3. 工具从当前消息历史提取用户输入，构造 `{"query": 用户输入}`
+4. 内部路由图根据代理描述选择一个或多个 `RouteTaskAgent`
+5. 多个任务代理可并发执行
+6. 单个结果直接返回，多个结果由合并模型整理为 `final_result`
+
+示例创建方式：
+
+```python
+from langchain.agents import create_agent
+
+from agent.llm import create_chat_model
+from agent.middleware.prebuild.router_agent import RouteAgentMiddleware
+from agent.router.file_manager import RouterFileManagerAgent
+from agent.router.greet import RouterGreetAgent
+from agent.router.research import RouterResearchAgent
+from agent.router.review import RouterReviewAgent
+from agent.router.writing import RouterWritingAgent
+
+route_agent_middleware = RouteAgentMiddleware(
+    name="router_agent",
+    router_model=create_chat_model(enable_thinking=False),
+    agents=[
+        RouterWritingAgent(),
+        RouterResearchAgent(),
+        RouterReviewAgent(),
+        RouterGreetAgent(),
+        RouterFileManagerAgent(),
+    ],
+)
+
+agent = create_agent(
+    name="router_main_agent",
+    model=create_chat_model(enable_thinking=False),
+    middleware=[route_agent_middleware],
+)
+```
 
 ## 人工审批流程
 
