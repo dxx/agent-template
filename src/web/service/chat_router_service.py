@@ -6,7 +6,6 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command, Interrupt
 
 from agent.memory import AppAgentContext
-from agent.middleware.prebuild.router_agent import ROUTER_TOOL_NAME
 from agent.router import create_router_agent
 from log import get_logger
 from web.schemas import (
@@ -146,12 +145,6 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
     # llm 回复的完整消息
     if isinstance(message, AIMessage) and message.tool_calls:
         tool_names = [tool_call["name"] for tool_call in message.tool_calls]
-
-        # 过滤路由工具
-        tool_names = [name for name in tool_names if name != ROUTER_TOOL_NAME]
-        if not tool_names:
-            return None
-        
         return ChatResponse(
             msg_id=message.id if message.id else str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
@@ -159,10 +152,6 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
         )
      # 工具消息
     if isinstance(message, ToolMessage):
-        # 过滤路由工具
-        if message.name == ROUTER_TOOL_NAME:
-            return None
-
         return ChatResponse(
             msg_id=message.id if message.id else str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,

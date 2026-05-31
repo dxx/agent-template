@@ -1,11 +1,11 @@
 """Route Agent 中间件
 
-提供一个 `invoke_router_agent` 工具，由主 Agent 主动调用后，再通过内部
+提供一个 `route` 工具，由主 Agent 主动调用后，再通过内部
 StateGraph 路由到多个任务 Agent 执行。
 
 `RouteAgentMiddleware` 的内部流程：
 
-1. 向主 Agent 注册 `invoke_router_agent` 工具
+1. 向主 Agent 注册 `route` 工具
 2. 工具从当前 `runtime.state["messages"]` 中提取最近一条用户输入
 3. 内部 `_RouteGraphAgent` 使用 `StateGraph` 执行 `router → call_agent → join`
 4. `router` 节点用 LLM 生成结构化 `RouterResult`
@@ -47,12 +47,12 @@ from agent.memory.router_state import (
     RouterState,
 )
 
-ROUTER_TOOL_NAME = "invoke_router_agent"
+_ROUTER_TOOL_NAME = "route"
 
 _ROUTER_SYSTEM_PROMPT = """
 ## Router(路由任务)
 
-你可以使用 `invoke_router_agent` 工具通过路由代理处理用户问题。
+你可以使用 `route` 工具通过路由代理处理用户问题。
 
 当用户请求需要选择合适的专业代理、拆分给多个代理协作，或者你不确定应该由哪个
 代理处理时，调用该工具。
@@ -387,7 +387,7 @@ class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         context_schema: type[Any] | None = None,
         system_prompt: str | None = _ROUTER_SYSTEM_PROMPT,
         router_prompt: str = _ROUTER_PROMPT,
-        tool_name: str = ROUTER_TOOL_NAME,
+        tool_name: str = _ROUTER_TOOL_NAME,
     ):
         """初始化 Route Agent 中间件。
 
@@ -444,7 +444,7 @@ class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
 
 
 def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> StructuredTool:
-    def invoke_router_agent(runtime: ToolRuntime[ContextT, AgentState]) -> str:
+    def route(runtime: ToolRuntime[ContextT, AgentState]) -> str:
         """通过路由处理用户输入。"""
         result = router_agent.invoke(
             _build_router_input(runtime.state),
@@ -452,7 +452,7 @@ def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> Struc
         )
         return result["final_result"]
 
-    async def ainvoke_router_agent(runtime: ToolRuntime[ContextT, AgentState]) -> str:
+    async def aroute(runtime: ToolRuntime[ContextT, AgentState]) -> str:
         """通过路由处理用户输入。"""
         result = await router_agent.ainvoke(
             _build_router_input(runtime.state),
@@ -463,8 +463,8 @@ def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> Struc
     return StructuredTool.from_function(
         name=tool_name,
         description="通过路由代理处理当前用户输入。",
-        func=invoke_router_agent,
-        coroutine=ainvoke_router_agent,
+        func=route,
+        coroutine=aroute,
     )
 
 
