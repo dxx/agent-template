@@ -133,7 +133,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     def task(
         agent_name: Annotated[str, "代理名称。必须是工具描述中的代理名称"],
         task_input: Annotated[str, "代执行任务的内容，包含必要的上下文信息"],
-        runtime: ToolRuntime[Any, AgentState]
+        runtime: ToolRuntime[ContextT, AgentState]
     ) -> str | Command:
         """分发给指定的子代理执行任务"""
 
@@ -141,8 +141,8 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
 
         agent = _get_subagent(agent_name)
 
-        inputs = _validate_and_prepare_state(
-            user_input=task_input, runtime=runtime
+        inputs = _prepare_state(
+            content=task_input, runtime=runtime
         )
 
         result = agent.invoke(
@@ -174,7 +174,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     async def atask(
         agent_name: Annotated[str, "代理名称。必须是工具描述中的代理名称"],
         task_input: Annotated[str, "代执行任务的内容，包含必要的上下文信息"],
-        runtime: ToolRuntime[Any, AgentState]
+        runtime: ToolRuntime[ContextT, AgentState]
     ) -> str | Command:
         """分发给指定的子代理执行任务"""
 
@@ -182,8 +182,8 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
 
         agent = _get_subagent(agent_name)
 
-        inputs = _validate_and_prepare_state(
-            user_input=task_input, runtime=runtime
+        inputs = _prepare_state(
+            content=task_input, runtime=runtime
         )
 
         result = await agent.ainvoke(
@@ -280,12 +280,14 @@ class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         new_system_message = SystemMessage(content_blocks=new_content)
         return request.override(system_message=new_system_message)
 
-def _validate_and_prepare_state(user_input: str, runtime: ToolRuntime[Any, AgentState]) -> dict:
+
+def _prepare_state(content: str, runtime: ToolRuntime[ContextT, AgentState]) -> dict:
     """准备 state"""
     # 创建一个新的状态字典，以避免修改原始数据
     state = {k: v for k, v in runtime.state.items() if k not in _EXCLUDED_STATE_KEYS}
-    state["messages"] = [{"role": "user", "content": user_input}]
+    state["messages"] = [{"role": "user", "content": content}]
     return state
+
 
 def _return_message_with_state_update(result: dict) -> tuple[str, dict]:
     if "messages" not in result:
