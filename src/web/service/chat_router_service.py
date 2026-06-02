@@ -22,7 +22,7 @@ from web.session import format_thread_id
 
 logger = get_logger(__name__)
 
-settiongs = get_settings()
+settings = get_settings()
 
 # 创建 router_agent
 router_agent = create_router_agent()
@@ -134,7 +134,7 @@ def _render_message_chunk(token: AIMessageChunk) -> ChatResponse | None:
 def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
     """渲染完整消息"""
 
-    if settiongs.app_env == settiongs.app_env == AppEnv.DEV.value:
+    if settings.app_env == AppEnv.DEV.value:
         # llm 回复的完整消息
         if isinstance(message, AIMessage) and message.tool_calls:
             logger.info("Tool calls: %s", message.tool_calls)

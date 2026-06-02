@@ -21,7 +21,7 @@ from web.session import format_thread_id
 
 logger = get_logger(__name__)
 
-settiongs = get_settings()
+settings = get_settings()
 
 # 创建 main_agent
 main_agent = create_main_agent()
@@ -160,7 +160,7 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
     tool_calls = [] invalid_tool_calls = []
     """
 
-    if settiongs.app_env == settiongs.app_env == AppEnv.DEV.value:
+    if settings.app_env == AppEnv.DEV.value:
         # llm 回复的完整消息
         if isinstance(message, AIMessage) and message.tool_calls:
             logger.info("Tool calls: %s", message.tool_calls)
