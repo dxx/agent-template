@@ -204,7 +204,6 @@ agent-template/
 | `/health` | GET | 健康检查 |
 | `/chat/stream` | POST | SSE 流式对话（需认证） |
 | `/chat/router/stream` | POST | SSE 路由 Agent 流式对话（需认证） |
-| `/test/chat/stream` | GET | 测试对话（无需认证） |
 | `/message/chat/create` | POST | 创建新对话 |
 | `/message/all` | GET | 获取用户所有对话 |
 | `/message/chat/{chat_id}` | GET | 获取指定对话的消息列表 |
@@ -213,7 +212,7 @@ agent-template/
 
 **中间件** (`middleware/`):
 - `AuthMiddleware`: 基于请求头认证，公开路径白名单: `/docs`, `/openapi.json`, `/health`, `/test/chat/stream`
-- `ChatMiddleware`: 对话状态中间件，从请求中提取 `user_id` 和 `chat_id` 构建应用状态
+- `ChatMiddleware`: 对话状态中间件，从请求中提取 `user_id` 和 `chat_id` 校验 `chat_id`
 
 
 ## 快速开始
@@ -234,8 +233,8 @@ cp .env.example .env
 
 主要配置项：
 - `OPENAI_API_KEY`: 你的 API Key
-- `OPENAI_MODEL`: 模型名称
 - `OPENAI_BASE_URL`: API 地址
+- `OPENAI_MODEL`: 模型名称
 
 ### 3. 启动服务
 
@@ -251,8 +250,12 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 ```
 
 项目提供了完整的 HTTP 测试文件：
-- `tests/chat_api.http` - 对话 API 测试
+- `tests/chat_api.http` - 子代理模式对话 API 测试
+- `tests/chat_router_api.http` - 路由模式对话 API 测试
+- `tests/human-in-the-loop.http` - 人工介入 API 测试
+- `tests/mcp.http` - MCP 工具 API 测试
 - `tests/message_api.http` - 消息管理 API 测试
+- `tests/skills_api.http` - 技能 API 测试
 
 
 ## 环境配置
@@ -287,17 +290,17 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 
 ```
 用户请求 → 认证中间件 → ChatService
-                              ↓
-                    MainAgent.astream() 异步流式处理
-                              ↓
-                ┌───────────────┴───────────────┐
-                ↓                               ↓
-           消息流 (messages)              更新流 (updates)
-                ↓                               ↓
-           渲染 AIMessageChunk           渲染完整消息/中断
-                └───────────────┬───────────────┘
-                                ↓
-                          SSE 响应
+                           ↓
+                 MainAgent.astream() 异步流式处理
+                           ↓
+            ┌──────────────┴───────────────┐
+            ↓                              ↓
+        消息流 (messages)              更新流 (updates)
+            ↓                              ↓
+        渲染 AIMessageChunk           渲染完整消息/中断
+            └───────────────┬──────────────┘
+                            ↓
+                        SSE 响应
 ```
 
 ## 子代理调度
