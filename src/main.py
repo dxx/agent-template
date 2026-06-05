@@ -6,7 +6,7 @@ def run():
     settings = get_settings()
 
     reload = False
-    if settings.app_env == "default" or "dev":
+    if settings.app_env == "dev":
         # 开发环境热更新
         reload = True
 
