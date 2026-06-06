@@ -47,6 +47,10 @@ from agent.memory.router_state import (
     RouterState,
 )
 
+from log import get_logger
+
+logger = get_logger(__name__)
+
 _ROUTER_TOOL_NAME = "route"
 
 _ROUTER_SYSTEM_PROMPT = """
@@ -147,6 +151,9 @@ class _RouteGraphAgent(RouteTaskAgent):
         self._system_prompt = system_prompt.format(
             agents=self._format_agents(self._agents)
         )
+
+        logger.info("Registry router agents: %s", self._agents)
+
         self._graph = self._compile_graph(
             state_schema=state_schema,
             context_schema=context_schema,
