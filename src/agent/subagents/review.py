@@ -7,14 +7,18 @@ from agent.prompts import AGENT_REVIEW_PROMPT
 from agent.memory import AppAgentContext
 
 class ReviewAgent(SubAgent):
+
     def __init__(self):
+        
+        agent = create_agent(
+            model=create_chat_model(),
+            name=SubAgentEnum.REVIEW.value,
+            system_prompt=AGENT_REVIEW_PROMPT,
+            context_schema=AppAgentContext
+        )
+        
         super().__init__(
             name=SubAgentEnum.REVIEW.value,
             description="擅长检查和改进内容质量，对事物进行评价",
-            agent=create_agent(
-                model=create_chat_model(),
-                name=SubAgentEnum.REVIEW.value,
-                system_prompt=AGENT_REVIEW_PROMPT,
-                context_schema=AppAgentContext
-            )
+            agent=agent
         )
