@@ -255,6 +255,7 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 - `tests/human-in-the-loop.http` - 人工介入 API 测试
 - `tests/mcp.http` - MCP 工具 API 测试
 - `tests/message_api.http` - 消息管理 API 测试
+- `tests/multimodal_api.http` - 多模态 API 测试
 - `tests/skills_api.http` - 技能 API 测试
 
 
