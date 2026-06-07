@@ -1,6 +1,6 @@
 # Chat 对话模块
 
-对话模块负责处理用户的流式对话请求，支持普通对话和 Human-in-the-Loop 审批流程。
+对话模块负责处理用户的流式对话请求，支持普通对话、多模态输入和 Human-in-the-Loop 审批流程。
 
 ## 数据结构
 
@@ -15,11 +15,21 @@
 
 #### ChatRequest
 
-| 字段         | 类型                   | 说明             |
-| ---------- | -------------------- | -------------- |
-| `msg_type` | `RequestMsgTypeEnum` | 消息类型，默认 normal |
-| `content`  | `str`                | 对话请求内容         |
-| `decision` | `Decision \| None`   | 审批决策内容         |
+| 字段         | 类型                                | 说明             |
+| ---------- | --------------------------------- | -------------- |
+| `msg_type` | `RequestMsgTypeEnum`              | 消息类型，默认 normal |
+| `content`  | `str \| list[Multimodal] \| None` | 对话请求内容         |
+| `decision` | `Decision \| None`                | 审批决策内容         |
+
+`content` 在普通消息中不能为空。普通文本对话可直接传字符串；多模态对话传内容块数组，支持文本、图片和视频。
+
+#### Multimodal
+
+| 类型          | 结构                                      | 说明                    |
+| ----------- | --------------------------------------- | --------------------- |
+| `text`      | `{"type": "text", "text": "..."}` | 文本内容                  |
+| `image_url` | `{"type": "image_url", "image_url": {...}}` | OpenAI 兼容格式的图片内容      |
+| `video_url` | `{"type": "video_url", "video_url": {...}}` | OpenAI 兼容格式的视频内容      |
 
 ### 响应类型
 
