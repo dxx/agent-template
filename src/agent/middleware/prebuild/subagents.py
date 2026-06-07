@@ -137,7 +137,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     ) -> str | Command:
         """分发给指定的子代理执行任务"""
 
-        logger.info("Execute atask call subagent %s", agent_name)
+        logger.info("Execute task call subagent %s", agent_name)
 
         agent = _get_subagent(agent_name)
 
