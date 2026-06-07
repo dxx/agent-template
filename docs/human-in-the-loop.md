@@ -134,8 +134,8 @@ class FileManagerAgent(SubAgent):
 
 发起请求，访问 FileManagerAgent：
 
-```bash
-POST http://localhost:8000/chat/stream
+```http
+POST /chat/stream
 Content-Type: application/json
 Connection: keep-alive
 user-token: user_123
@@ -181,7 +181,7 @@ approve 消息内容：
 
 进行审批请求：
 
-```bash
+```http
 POST /chat/stream
 Content-Type: application/json
 Connection: keep-alive

@@ -24,7 +24,7 @@
 
 ### 创建新对话
 
-```
+```http
 POST /message/chat/create
 user-token: user_123
 ```
@@ -43,7 +43,7 @@ user-token: user_123
 
 ### 获取所有对话消息
 
-```
+```http
 GET /message/all
 user-token: user_123
 ```
@@ -80,7 +80,7 @@ user-token: user_123
 
 ### 获取指定对话消息
 
-```
+```http
 GET /message/chat/{chat_id}
 user-token: user_123
 ```
@@ -108,7 +108,7 @@ user-token: user_123
 
 ### 删除指定对话
 
-```
+```http
 DELETE /message/chat/{chat_id}
 user-token: user_123
 ```
@@ -127,7 +127,7 @@ user-token: user_123
 
 ### 删除所有对话
 
-```
+```http
 DELETE /message/all
 user-token: user_123
 ```

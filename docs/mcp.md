@@ -91,9 +91,9 @@ class ReseachAgent(SubAgent):
 
 请求：
 
-```bash
+```http
 ### 访问 MCP 工具
-POST http://localhost:8000/chat/stream
+POST /chat/stream
 Content-Type: application/json
 Connection: keep-alive
 user-token: user_123

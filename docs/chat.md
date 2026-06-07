@@ -87,7 +87,7 @@
 
 ### 流式对话
 
-```
+```http
 POST /chat/stream
 user-token: user_123
 chat-id: chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
