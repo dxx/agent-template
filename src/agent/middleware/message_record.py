@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from enum import Enum
 from typing import Any, TypedDict, cast, override
@@ -7,6 +8,7 @@ from langchain.agents.middleware.types import (
     ContextT,
     StateT,
 )
+from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.store.base import BaseStore
 
 
@@ -88,7 +90,6 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
         if not user_input:
             return None
         key = self._get_key_from_runtime(runtime)
-        import asyncio
 
         asyncio.create_task(self._record_user_message(key, user_input))
         return None
@@ -117,8 +118,6 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
             return None
         key = self._get_key_from_runtime(runtime)
         if key:
-            import asyncio
-
             asyncio.create_task(self._record_agent_message(key, agent_response))
         return None
 
@@ -150,13 +149,34 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
             messages = state.get("messages", [])
             if not messages:
                 return None
-            from langchain_core.messages import HumanMessage
 
             human_messages = [m for m in messages if isinstance(m, HumanMessage)]
             if not human_messages:
                 return None
             last_msg = human_messages[-1]
-            return last_msg.text
+            if isinstance(last_msg.content, str):
+                text_value = last_msg.content
+            else:
+                # Must be a list
+                blocks = []
+                for block in last_msg.content:
+                    if not block:
+                        continue
+                    if isinstance(block, str):
+                        blocks.append(block)
+                    if isinstance(block, dict):
+                        if (block.get("type") == "text" and isinstance(block.get("text"), str) and block.get("text")):
+                            blocks.append(block.get("text"))
+                        elif block.get("type") in ["image", "image_url"]:
+                            blocks.append("[图片]")
+                        elif block.get("type") in ["video", "video_url"]:
+                            blocks.append("[视频]")
+                        else:
+                            blocks.append("[未知]")
+                text_value = "\n".join(
+                    blocks
+                )
+            return text_value
         except Exception:
             return None
 
@@ -165,7 +185,6 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
             messages = state.get("messages", [])
             if not messages:
                 return None
-            from langchain_core.messages import AIMessage
 
             ai_messages = [m for m in messages if isinstance(m, AIMessage)]
             if not ai_messages:
