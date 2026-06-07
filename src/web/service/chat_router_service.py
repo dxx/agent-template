@@ -31,7 +31,7 @@ router_agent = create_router_agent()
 async def router_chat_response(
     app_state: AppState,
     request: ChatRequest,
-) -> AsyncIterable[ChatResponse[str]]:
+) -> AsyncIterable[ChatResponse]:
     """路由 Agent 流式对话响应。"""
     content = request.content
     decision = request.decision
@@ -62,7 +62,6 @@ async def router_chat_response(
         ):
             if chunk["type"] == "messages":
                 token, metadata = chunk["data"]
-                lc_agent_name = metadata.get("lc_agent_name")
                 lc_source = metadata.get("lc_source", None)
                 if lc_source == "summarization":
                     # SummarizationMiddleware 汇总节点忽略

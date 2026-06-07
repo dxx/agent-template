@@ -26,7 +26,11 @@ settings = get_settings()
 # 创建 main_agent
 main_agent = create_main_agent()
 
-async def chat_response(app_state: AppState, request: ChatRequest) -> AsyncIterable[ChatResponse[str]]:
+
+async def chat_response(
+    app_state: AppState,
+    request: ChatRequest
+) -> AsyncIterable[ChatResponse]:
     content = request.content
     decision = request.decision
 

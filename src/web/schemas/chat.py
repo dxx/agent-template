@@ -119,7 +119,7 @@ class ChatRequest(BaseModel):
         return self
 
 
-class ChatResponse[T](BaseModel):
+class ChatResponse(BaseModel):
     """对话响应"""
 
     msg_id: str
@@ -127,6 +127,6 @@ class ChatResponse[T](BaseModel):
         default=ResponseMsgTypeEnum.NORMAL,
         description="消息类型：可选 normal、process、approve、error",
     )
-    content: T | None = Field(default=None, description="对话响应内容")
+    content: str | None = Field(default=None, description="对话响应内容")
     approve: Approve | None = Field(default=None, description="审批内容")
     created: int | None = Field(default_factory=lambda: int(datetime.now().timestamp() * 1000), description="创建时间戳（毫秒）")
