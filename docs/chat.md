@@ -48,7 +48,7 @@
 | ---------- | --------------------- | --------- |
 | `msg_id`   | `str`                 | 消息 ID     |
 | `msg_type` | `ResponseMsgTypeEnum` | 消息类型      |
-| `content`  | `T \| None`           | 对话响应内容    |
+| `content`  | `str \| None`           | 对话响应内容    |
 | `approve`  | `Approve \| None`     | 审批内容      |
 | `created`  | `int`                 | 创建时间戳（毫秒） |
 
