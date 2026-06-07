@@ -133,7 +133,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     def task(
         agent_name: Annotated[str, "代理名称。必须是工具描述中的代理名称"],
         task_input: Annotated[str, "代执行任务的内容，包含必要的上下文信息"],
-        runtime: ToolRuntime[ContextT, AgentState]
+        runtime: ToolRuntime[Any, AgentState]
     ) -> str | Command:
         """分发给指定的子代理执行任务"""
 
@@ -174,7 +174,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     async def atask(
         agent_name: Annotated[str, "代理名称。必须是工具描述中的代理名称"],
         task_input: Annotated[str, "代执行任务的内容，包含必要的上下文信息"],
-        runtime: ToolRuntime[ContextT, AgentState]
+        runtime: ToolRuntime[Any, AgentState]
     ) -> str | Command:
         """分发给指定的子代理执行任务"""
 
@@ -281,7 +281,7 @@ class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         return request.override(system_message=new_system_message)
 
 
-def _prepare_state(content: str, runtime: ToolRuntime[ContextT, AgentState]) -> dict:
+def _prepare_state(content: str, runtime: ToolRuntime[Any, AgentState]) -> dict:
     """准备 state"""
     # 创建一个新的状态字典，以避免修改原始数据
     state = {k: v for k, v in runtime.state.items() if k not in _EXCLUDED_STATE_KEYS}
