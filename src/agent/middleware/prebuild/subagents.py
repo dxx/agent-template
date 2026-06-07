@@ -137,7 +137,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     ) -> str | Command:
         """分发给指定的子代理执行任务"""
 
-        logger.info("Execute task call subagent %s", agent_name)
+        logger.debug("Execute task subagent: %s, input: %s", agent_name, task_input)
 
         agent = _get_subagent(agent_name)
 
@@ -178,7 +178,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     ) -> str | Command:
         """分发给指定的子代理执行任务"""
 
-        logger.info("Execute atask call subagent %s", agent_name)
+        logger.debug("Execute task subagent: %s, input: %s", agent_name, task_input)
 
         agent = _get_subagent(agent_name)
 
@@ -225,7 +225,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
         available_agents="\n".join(descriptions)
     )
 
-    logger.info("Registry subagents: %s", _subagent_registry)
+    logger.debug("Registry subagents: %s", _subagent_registry)
 
     return StructuredTool.from_function(
         name=_TASK_TOOL_NAME,

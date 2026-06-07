@@ -251,7 +251,9 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
             skill = self._parse_skill(skill_path)
             if not skill:
                 continue
-            logger.info(f"Load skill name: {skill["name"]}, path: {skill["path"]}")
+            
+            logger.debug(f"Load skill name: {skill["name"]}, path: {skill["path"]}")
+
             skills.append(skill)
 
         return skills

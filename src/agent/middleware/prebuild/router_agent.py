@@ -152,7 +152,7 @@ class _RouteGraphAgent(RouteTaskAgent):
             agents=self._format_agents(self._agents)
         )
 
-        logger.info("Registry router agents: %s", self._agents)
+        logger.debug("Registry router agents: %s", self._agents)
 
         self._graph = self._compile_graph(
             state_schema=state_schema,
@@ -227,8 +227,15 @@ class _RouteGraphAgent(RouteTaskAgent):
             for router in routers
         ]
 
-    def _call_agent(self, state: RouterState, config: RunnableConfig) -> dict[str, list[AgentOutput]]:
+    def _call_agent(
+        self,
+        state: RouterState,
+        config: RunnableConfig
+    ) -> dict[str, list[AgentOutput]]:
         router = self._get_current_router(state)
+
+        logger.debug("Call agent %s with query: %s", router.name, router.query)
+
         agent = self._agents[router.name]
         result = agent.invoke(
             self._build_agent_input(state, router),
@@ -242,6 +249,9 @@ class _RouteGraphAgent(RouteTaskAgent):
         config: RunnableConfig,
     ) -> dict[str, list[AgentOutput]]:
         router = self._get_current_router(state)
+
+        logger.debug("Call agent %s with query: %s", router.name, router.query)
+
         agent = self._agents[router.name]
         result = await agent.ainvoke(
             self._build_agent_input(state, router),
