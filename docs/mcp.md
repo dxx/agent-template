@@ -33,7 +33,7 @@ mcp_config={
 {
     "transport": "stdio",
     "command": "uvx",
-    "args": ["arxiv-mcp-server", "--storage-path", "./arxiv/paper"]
+    "args": ["--from", "arxiv-mcp-server==0.4.12", "arxiv-mcp-server", "--storage-path", "./arxiv/paper"]
 }
 ```
 
@@ -70,6 +70,8 @@ class ReseachAgent(SubAgent):
                             "transport": "stdio",
                             "command": "uvx",
                             "args": [
+                                "--from",
+                                "arxiv-mcp-server==0.4.12",
                                 "arxiv-mcp-server",
                                 "--storage-path",
                                 f"{Path.cwd()}/arxiv/paper"
