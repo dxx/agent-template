@@ -1,8 +1,8 @@
 import logging
-from logging.handlers import TimedRotatingFileHandler
 import sys
 from pathlib import Path
-from pythonjsonlogger import jsonlogger
+from pythonjsonlogger import json
+from logging.handlers import TimedRotatingFileHandler
 
 from config import get_settings, Settings
 
@@ -42,7 +42,7 @@ def get_logger(name: str) -> logging.Logger:
 def _get_formatter(log_format_type: str) -> logging.Formatter:
     if log_format_type == "json":
         # json 内容
-        return jsonlogger.JsonFormatter( # type: ignore[import]
+        return json.JsonFormatter(
             fmt="%(levelname)s %(asctime)s %(name)s %(message)s %(pathname)s",
             datefmt="%Y-%m-%d %H:%M:%S",
             json_ensure_ascii=False,
