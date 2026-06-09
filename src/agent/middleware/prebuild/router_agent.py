@@ -20,7 +20,7 @@ StateGraph 路由到多个任务 Agent 执行。
 """
 
 from collections.abc import Awaitable, Callable, Sequence
-from typing import Any, Literal, override, cast
+from typing import Any, Literal, override
 
 from langchain.agents.middleware import ModelRequest, ModelResponse
 from langchain.agents.middleware.types import (
