@@ -7,7 +7,7 @@ async def request(
     url: str,
     *,
     params: dict | None = None,
-    json: dict | None = None,
+    json: Any | None = None,
     **kwargs,
 ) -> httpx.Response:
     async with httpx.AsyncClient() as client:
@@ -19,7 +19,7 @@ async def get(url: str, *, params: dict | None = None, **kwargs) -> httpx.Respon
 
 
 async def post(
-    url: str, *, params: dict | None = None, json: dict | None = None, **kwargs
+    url: str, *, params: dict | None = None, json: Any | None = None, **kwargs
 ) -> httpx.Response:
     return await request("POST", url, params=params, json=json, **kwargs)
 
@@ -30,7 +30,7 @@ async def get_json(url: str, *, params: dict | None = None, **kwargs) -> Any:
 
 
 async def post_json(
-    url: str, *, params: dict | None = None, json: dict | None = None, **kwargs
+    url: str, *, params: dict | None = None, json: Any | None = None, **kwargs
 ) -> Any:
     resp = await post(url, params=params, json=json, **kwargs)
     return resp.json()
