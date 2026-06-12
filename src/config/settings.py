@@ -10,21 +10,21 @@ class AppEnv(StrEnum):
     DEV = "dev"
     PROD = "prod"
 
-APP_ENV = os.getenv("APP_ENV")
+_app_env = os.getenv("APP_ENV")
 
-if not APP_ENV:
+if not _app_env:
     os.environ["APP_ENV"] = AppEnv.DEV.value
-    APP_ENV = AppEnv.DEV.value
+    _app_env = AppEnv.DEV.value
 
-APP_ENV = APP_ENV.strip()
+_app_env = _app_env.strip()
 
-if APP_ENV not in (item.value for item in AppEnv):
+if _app_env not in (item.value for item in AppEnv):
     raise ValueError(f"APP_ENV is incorrect")
 
 # 从当前模块往上找到 src，和 src 同级别，.env 文件和 src 目录同级
 path = Path(__file__).resolve().parent.parent.parent
 
-env_path = path.joinpath(f".env.{APP_ENV}")
+env_path = path.joinpath(f".env.{_app_env}")
 default_env_path = path.joinpath(".env")
 
 
@@ -58,7 +58,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings(app_env=APP_ENV) # type: ignore[call-issue]
+    return Settings(app_env=_app_env) # type: ignore[call-issue]
 
 
 def reload_settings() -> Settings:
