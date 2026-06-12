@@ -40,6 +40,9 @@ class Settings(BaseSettings):
 
     openapi_url: str = Field(default="/openapi.json", validation_alias="OPENAPI_URL")
 
+    cors_allow_origins: list[str] = Field(default=[], validation_alias="CORS_ALLOW_ORIGINS")
+    cors_allow_credentials: bool = Field(default=False, validation_alias="CORS_ALLOW_CREDENTIALS")
+
     openai_base_url: str = Field(validation_alias="OPENAI_BASE_URL")
     openai_api_key: str = Field(validation_alias="OPENAI_API_KEY")
     openai_model: str = Field(validation_alias="OPENAI_MODEL")
