@@ -1,15 +1,21 @@
-from typing import Literal
+from typing import Any, Literal
 from langchain.chat_models import init_chat_model, BaseChatModel
 from pydantic import SecretStr
 from config.settings import get_settings
 
 settings = get_settings()
 
+Provider = Literal["bailian", "volcengine", "minimax"]
+"""提供商。主要针对不同的提供商处理个性化参数"""
+
 ReasoningEffort = Literal["minimal", "low", "medium", "high"]
+"""思考程度。OpenAI 兼容参数"""
+
 
 def create_chat_model(
     enable_thinking: bool = True,
     reasoning_effort: ReasoningEffort = "minimal",
+    streaming: bool = True,
     stream_token_usage: bool = False,
 ) -> BaseChatModel:
     """
@@ -31,19 +37,39 @@ def create_chat_model(
         base_url=settings.openai_base_url,
         api_key=SecretStr(settings.openai_api_key) if settings.openai_api_key else None,
         temperature=settings.openai_temperature,
-        streaming=True,
+        streaming=streaming,
         stream_usage=stream_token_usage,
         reasoning_effort=reasoning_effort,
-        extra_body={
+        extra_body=_build_extra_body(
+            settings.openai_provider, # type: ignore[arg-type]
+            enable_thinking
+        ),
+    )
+
+
+def _build_extra_body(provider: Provider, enable_thinking: bool) -> dict[str, Any]:
+    """根据不同模型提供商生成其支持的额外参数。"""
+    if provider == "volcengine":
+        return {
             # https://www.volcengine.com/docs/82379/1449737?lang=zh
             # 字节模型开启思考模式
-            "thinking":{"type":"enabled" if enable_thinking else "disabled"},
-            # https://help.aliyun.com/zh/model-studio/deep-thinking
-            # 千问模型开启思考模式
-            "enable_thinking": enable_thinking,
-            # 千问模型思考长度
-            "thinking_budget": 50,
-            # Minimax 将思考字段从 content 中分离出来
-            "reasoning_split": True
+            "thinking": {"type": "enabled" if enable_thinking else "disabled"},
         }
-    )
+
+    if provider == "minimax":
+        return {
+            # https://platform.minimaxi.com/docs/api-reference/text-openai-api
+            # MiniMax-M3 开启 adaptive thinking，关闭时跳过 thinking 直接回答
+            # 对于 M2.x 模型，thinking 仍会保持开启
+            "thinking": {"type": "adaptive" if enable_thinking else "disabled"},
+            # Minimax 将思考字段从 content 中分离出来
+            "reasoning_split": True,
+        }
+
+    return {
+        # https://help.aliyun.com/zh/model-studio/deep-thinking
+        # 千问模型开启思考模式
+        "enable_thinking": enable_thinking,
+        # 千问模型思考长度
+        "thinking_budget": 50,
+    }
