@@ -74,6 +74,8 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
 
         if not dirs:
             raise ValueError("dirs 不能为空")
+
+        self.skill_dirs = [Path(_resolve_path(directory)).resolve() for directory in dirs]
         
         self.skills: list[Skill] = []
         for directory in dirs:
@@ -203,13 +205,39 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         )
     
     def _create_read_file_tool(self) -> BaseTool:
+        def read_source_file(file_path: str) -> str:
+            """读取资源文件内容。
+            
+            Args:
+                file_path: 读取文件的绝对路径。必须是绝对路径，不能是相对路径
+            """
+
+            path = self._resolve_source_file_path(file_path)
+            return path.read_text(encoding="utf-8")
+
+        async def aread_source_file(file_path: str) -> str:
+            """读取资源文件内容。
+            
+            Args:
+                file_path: 读取文件的绝对路径。必须是绝对路径，不能是相对路径
+            """
+
+            return read_source_file(file_path)
+
         # 创建工具函数
         return StructuredTool.from_function(
             name="read_source_file",
-            func=_read_source_file,
-            coroutine=_aread_source_file,
+            func=read_source_file,
+            coroutine=aread_source_file,
             parse_docstring=True
         )
+
+    def _resolve_source_file_path(self, file_path: str) -> Path:
+        path = Path(_resolve_path(file_path)).resolve()
+        for skill_dir in self.skill_dirs:
+            if path == skill_dir or path.is_relative_to(skill_dir):
+                return path
+        raise ValueError(f"文件路径必须在技能目录中: {file_path}")
     
     def _build_skills_prompt(self):
         skill_names = set()
@@ -323,27 +351,6 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
                     return request.override(tool=tool)
         return override_request
 
-
-def _read_source_file(file_path: str) -> str:
-    """读取资源文件内容。
-    
-    Args:
-        file_path: 文件路径。使用绝对路径
-    """
-
-    file_path = _resolve_path(file_path)
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
-        return content
-
-async def _aread_source_file(file_path: str) -> str:
-    """读取资源文件内容。
-    
-    Args:
-        file_path: 文件路径。使用绝对路径
-    """
-
-    return _read_source_file(file_path)
 
 def _resolve_path(file_path: str) -> str:
     path = ""
