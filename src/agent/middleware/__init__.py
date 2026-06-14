@@ -7,6 +7,7 @@ from agent.middleware.prebuild.skills import SkillsMiddleware
 from agent.middleware.prebuild.mcp_client import MCPClientMiddleware
 from agent.middleware.prebuild.tool_error_handling import ToolErrorHandlingMiddleware
 from agent.middleware.prebuild.tool_calls_patch import ToolCallsPatchMiddleware
+from agent.middleware.local_filesystem import FilesystemMiddleware
 from agent.middleware.system_time import SystemTimeMiddleware
 from agent.middleware.message_record import MessageRecordMiddleware
 
@@ -21,6 +22,7 @@ __all__ = [
     "ToolCallsPatchMiddleware",
     "ToolErrorHandlingMiddleware",
     "MCPClientMiddleware",
+    "FilesystemMiddleware",
     "SystemTimeMiddleware",
     "MessageRecordMiddleware",
 ]
