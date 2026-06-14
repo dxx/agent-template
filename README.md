@@ -147,6 +147,7 @@ agent-template/
 | `ToolErrorHandlingMiddleware` | 工具调用错误时返回 ToolMessage，让 agent 继续运行 |
 | `HumanInTheLoopMiddleware` | 人工介入，支持 approve/reject 决策 |
 | `MCPClientMiddleware` | MCP Client 中间件，连接 MCP Server 并动态注入工具 |
+| `FilesystemMiddleware` | 本地系统文件，提供本地文件操作工具 |
 | `MessageRecordMiddleware` | 记录用户和 Agent 的对话消息 |
 | `SystemTimeMiddleware` | 动态注入系统当前时间到提示词，帮助 Agent 准确回答时间相关问题 |
 
@@ -232,6 +233,7 @@ cp .env.example .env
 ```
 
 主要配置项：
+- `OPENAI_PROVIDER`: 模型提供商，可选 `bailian`、`volcengine`、`minimax`
 - `OPENAI_API_KEY`: 你的 API Key
 - `OPENAI_BASE_URL`: API 地址
 - `OPENAI_MODEL`: 模型名称
@@ -278,8 +280,11 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 | `LOG_LEVEL` | 日志级别 (debug/info/warning/error) | info |
 | `LOG_HANDLERS` | 日志处理方式 (console/file) | ["console"] |
 | `LOG_FORMAT_TYPE` | 日志格式类型 (text/json) | text |
-| `LOG_FILE` | 日志文件路径 | app.log |
-| `OPENAI_BASE_URL` | API 地址 | - (必填) |
+| `LOG_FILE` | 日志文件路径 | logs/app.log |
+| `CORS_ALLOW_ORIGINS` | CORS 允许的 origins，JSON 数组格式 | ["*"] |
+| `CORS_ALLOW_CREDENTIALS` | 是否允许跨域请求携带凭证 | false |
+| `OPENAI_PROVIDER` | 模型提供商，可选：bailian、volcengine、minimax | bailian |
+| `OPENAI_BASE_URL` | OpenAI 兼容 API 地址 | - (必填) |
 | `OPENAI_API_KEY` | API Key | - (必填) |
 | `OPENAI_MODEL` | 模型名称 | - (必填) |
 | `OPENAI_TEMPERATURE` | 温度参数 | 0.7 |
