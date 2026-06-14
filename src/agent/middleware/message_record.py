@@ -9,6 +9,7 @@ from langchain.agents.middleware.types import (
     StateT,
 )
 from langchain_core.messages import HumanMessage, AIMessage
+from langgraph.runtime import Runtime
 from langgraph.store.base import BaseStore
 
 
@@ -84,7 +85,7 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
     def before_agent(
         self,
         state: StateT,
-        runtime: Any,
+        runtime: Runtime[Any],
     ) -> dict[str, Any] | None:
         user_input = self._get_user_input(state)
         if not user_input:
@@ -98,7 +99,7 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
     async def abefore_agent(
         self,
         state: StateT,
-        runtime: Any,
+        runtime: Runtime[Any],
     ) -> dict[str, Any] | None:
         user_input = self._get_user_input(state)
         if not user_input:
@@ -111,7 +112,7 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
     def after_agent(
         self,
         state: StateT,
-        runtime: Any,
+        runtime: Runtime[Any],
     ) -> dict[str, Any] | None:
         agent_response = self._get_agent_response(state)
         if not agent_response:
@@ -125,7 +126,7 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
     async def aafter_agent(
         self,
         state: StateT,
-        runtime: Any,
+        runtime: Runtime[Any],
     ) -> dict[str, Any] | None:
         agent_response = self._get_agent_response(state)
         if not agent_response:
@@ -134,7 +135,7 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
         await self._record_agent_message(key, agent_response)
         return None
 
-    def _get_key_from_runtime(self, runtime: Any) -> str:
+    def _get_key_from_runtime(self, runtime: Runtime[Any]) -> str:
         if not hasattr(runtime, "context") or not runtime.context:
             raise ValueError("runtime.context is required")
         ctx = runtime.context
