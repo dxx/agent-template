@@ -45,7 +45,8 @@ agent-template/
 │   │   │   └── model.py
 │   │   ├── middleware/         # 中间件
 │   │   │   ├── __init__.py     # 中间件导出
-│   │   │   ├── message_record.py  # 记录对话消息
+│   │   │   ├── local_filesystem.py  # 本地文件系统
+│   │   │   ├── message_record.py    # 记录对话消息
 │   │   │   ├── system_time.py  # 系统时间注入
 │   │   │   └── prebuild/       # 预构建中间件
 │   │   │       ├── skills.py   # Skills 支持
