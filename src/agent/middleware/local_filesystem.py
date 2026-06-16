@@ -117,8 +117,11 @@ class FilesystemMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
 
         work_dir = self._get_work_dir(runtime)
 
-        if re.match(r"^[a-zA-Z]:", key):
-            resolved_path = (work_dir / key[2:].replace("\\", "/").lstrip("/")).resolve()
+        if re.match(r"^[a-zA-Z]:", str(work_dir)):
+            new_key = key
+            if re.match(r"^[a-zA-Z]:", key):
+                new_key = key[2:].replace("\\", "/")
+            resolved_path = (work_dir / new_key.removeprefix("/")).resolve()
         elif (path := Path(key)).is_absolute():
             resolved_path = (work_dir / str(path).removeprefix("/")).resolve()
         else:
