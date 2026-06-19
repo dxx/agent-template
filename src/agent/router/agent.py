@@ -1,5 +1,8 @@
+from typing import Any
 from langchain.agents import create_agent
+from langgraph.graph.state import CompiledStateGraph
 from langchain.agents.middleware import summarization
+from langchain.agents.middleware.types import AgentState
 
 from agent.llm import create_chat_model
 from agent.memory import (
@@ -30,7 +33,7 @@ def get_message_record_middleware():
     return _message_record_middleware
 
 
-def create_router_agent():
+def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any, Any]:
     """创建路由编排 Agent
 
     使用 router 目录下的写作、研究、审核、招待和文件管理代理，由

@@ -1,4 +1,6 @@
+from typing import Any
 from langchain.agents import create_agent
+from langgraph.graph.state import CompiledStateGraph
 from langchain.agents.middleware import summarization
 
 from agent.llm import create_chat_model
@@ -35,7 +37,7 @@ def get_message_record_middleware():
     return _message_record_middleware
 
 
-def create_main_agent():
+def create_main_agent() -> CompiledStateGraph[AppAgentState, AppAgentContext, Any, Any]:
     """创建主 Agent"""
 
     main_chat_model = create_chat_model(enable_thinking=False)

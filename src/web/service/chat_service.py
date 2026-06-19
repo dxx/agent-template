@@ -59,7 +59,7 @@ async def chat_response(
 
     try:
         async for chunk in main_agent.astream(
-            inputs,  # type: ignore[arg-type]
+            inputs,
             config=config,
             context=context,
             stream_mode=[

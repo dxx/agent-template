@@ -53,7 +53,7 @@ async def router_chat_response(
 
     try:
         async for chunk in router_agent.astream(
-            inputs,  # type: ignore[arg-type]
+            inputs,
             config=config,
             context=context,
             stream_mode=["updates", "messages"],

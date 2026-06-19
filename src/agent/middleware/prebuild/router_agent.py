@@ -97,7 +97,7 @@ class RouteTaskAgent:
         *,
         context: Any | None = None,
         stream_mode: StreamMode = "values",
-        version: Literal["v1", "v2"] = "v1",
+        version: Literal["v1"] = "v1",
         **kwargs: Any,
     ) -> dict[str, Any] | Any:
         return self._agent.invoke(
@@ -116,7 +116,7 @@ class RouteTaskAgent:
         *,
         context: Any | None = None,
         stream_mode: StreamMode = "values",
-        version: Literal["v1", "v2"] = "v1",
+        version: Literal["v1"] = "v1",
         **kwargs: Any,
     ) -> dict[str, Any] | Any:
         return await self._agent.ainvoke(
