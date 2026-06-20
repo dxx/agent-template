@@ -42,9 +42,10 @@ description: 如何和用户打招呼
 
 ```python
 from agent.middleware import SkillsMiddleware
+from agent.skills import DirectorySkillLoader
 
 middleware = SkillsMiddleware(
-    dirs=["skills"],  # 技能目录列表
+    loader=DirectorySkillLoader(["skills"]),  # 技能加载器
     grouped_tools={   # 动态加载的工具分组
         "greet": [greet_tool]
     }
@@ -55,12 +56,49 @@ middleware = SkillsMiddleware(
 
 | 参数             | 类型                        | 说明                |
 | --------------- | --------------------------- | ------------------ |
-| `dirs`          | `list[str]`                 | 技能目录列表，从这些目录加载技能  |
+| `loader`        | `SkillLoader`               | 技能加载器，负责加载技能和读取资源内容 |
 | `grouped_tools` | `dict[str, list[BaseTool]]` | 动态加载的工具分组，key 为技能名 |
+
+### SkillLoader
+
+`SkillLoader` 负责加载技能、按名称获取技能、读取资源内容和重新加载技能。
+
+```python
+class SkillLoader:
+    def list_skills(self) -> list[Skill]: ...
+    def get_skill(self, name: str) -> Skill | None: ...
+    def resolve_source_content(self, file_path: str) -> str: ...
+    async def aresolve_source_content(self, file_path: str) -> str: ...
+    def reload(self) -> list[Skill]: ...
+    async def areload(self) -> list[Skill]: ...
+```
+
+项目内置 `DirectorySkillLoader` 和 `RemoteSkillLoader`。
+
+`DirectorySkillLoader` 用于从本地目录加载技能。
+
+```python
+from agent.skills import DirectorySkillLoader
+
+loader = DirectorySkillLoader(["skills"])
+loader.reload()  # 重新扫描目录并刷新技能缓存
+await loader.areload()  # 异步重新扫描目录并刷新技能缓存
+```
+
+`RemoteSkillLoader` 用于从远程 `SKILLS.md` 地址加载技能。
+
+```python
+from agent.skills import RemoteSkillLoader
+
+loader = RemoteSkillLoader([
+    "https://example.com/skills/greet/SKILLS.md",
+    "https://example.com/skills/search/SKILLS.md",
+])
+```
 
 ### 系统提示词
 
-中间件会自动向系统提示词注入技能列表：
+中间件会通过 `SkillLoader` 获取技能列表，并自动向系统提示词注入技能列表：
 
 ```
 ## 技能系统
@@ -103,6 +141,9 @@ read_source_file(file_path: str) -> str
 ### GreetAgent
 
 ```python
+from agent.skills import DirectorySkillLoader
+
+
 class GreetAgent(SubAgent):
     """带有 Skills 的 Agent"""
     def __init__(self):
@@ -122,7 +163,7 @@ class GreetAgent(SubAgent):
             # 安装 skills 中间件
             middleware=[
                 SkillsMiddleware(
-                    dirs=[str(skill_dir)],
+                    loader=DirectorySkillLoader([str(skill_dir)]),
                     grouped_tools={
                         # 当使用 greet skill 时动态加载 greet 工具
                         "greet": [greet]
