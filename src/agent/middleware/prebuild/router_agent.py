@@ -60,6 +60,8 @@ _ROUTER_SYSTEM_PROMPT = """
 
 当用户请求需要选择合适的专业代理、拆分给多个代理协作，或者你不确定应该由哪个
 代理处理时，调用该工具。
+
+记住：总是优先使用 `route` 工具来处理任务。
 """
 
 _ROUTER_PROMPT = """
@@ -462,7 +464,7 @@ class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
 
 def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> StructuredTool:
     def route(runtime: ToolRuntime[Any, AgentState]) -> str:
-        """通过路由处理用户输入。"""
+        """通过路由处理处理任务。"""
         result = router_agent.invoke(
             _build_router_input(runtime.state),
             context=runtime.context,
@@ -470,7 +472,7 @@ def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> Struc
         return result["final_result"]
 
     async def aroute(runtime: ToolRuntime[Any, AgentState]) -> str:
-        """通过路由处理用户输入。"""
+        """通过路由处理处理任务。"""
         result = await router_agent.ainvoke(
             _build_router_input(runtime.state),
             context=runtime.context,
@@ -479,7 +481,7 @@ def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> Struc
 
     return StructuredTool.from_function(
         name=tool_name,
-        description="通过路由代理处理当前用户输入。",
+        description="通过路由处理处理任务。",
         func=route,
         coroutine=aroute,
     )

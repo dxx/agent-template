@@ -201,7 +201,7 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
                 file_path: 读取文件的绝对路径。必须是绝对路径，不能是相对路径
             """
 
-            return read_source_file(file_path)
+            return await self._loader.aresolve_source_content(file_path)
 
         # 创建工具函数
         return StructuredTool.from_function(
