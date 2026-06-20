@@ -1,9 +1,6 @@
 """Skills 技能中间件。支持 skills 系统"""
-import re
-import yaml
-from pathlib import Path
 from collections.abc import Awaitable
-from typing import Any, TypedDict, override, Callable
+from typing import Any, override, Callable
 from langchain.tools import BaseTool
 from langchain_core.tools import StructuredTool
 from langchain.tools.tool_node import ToolCallRequest
@@ -21,11 +18,9 @@ from langchain.agents.middleware.types import (
 )
 
 from log import get_logger
+from agent.skills import Skill, SkillLoader
 
 logger = get_logger(__name__)
-
-MAX_SKILL_NAME_LENGTH = 64
-MAX_SKILL_DESCRIPTION_LENGTH = 1024
 
 _LOAD_SKILL_TOOL_NAME = "load_skill"
 
@@ -49,49 +44,30 @@ _SKILLS_SYSTEM_PROMPT = """
 3. 访问需要的文件。技能可能包含了其他配置或参考文档，参考技能的 path 总是使用绝对路径读取
 """
 
-class Skill(TypedDict):
-    """技能信息"""
-    name: str
-    description: str
-    content: str
-    path: str
-
 class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
     """技能中间件。向系统提示词中注入技能描述"""
 
     def __init__(
-            self, dirs: list[str],
-            grouped_tools: dict[str, list[BaseTool]] = {}
+            self,
+            loader: SkillLoader,
+            grouped_tools: dict[str, list[BaseTool]] | None = None
         ):
         """初始化 Skills 中间件并生成技能提示词。
 
         Args:
-            dirs: 技能目录列表。每个目录下的子目录如果包含 `SKILL.md`，会被解析为
-                一个可加载技能。
+            loader: 技能加载器。负责加载技能、按名称获取技能和读取资源内容。
             grouped_tools: 按技能名称分组的工具列表。当模型加载某个 skill 后，
                 中间件会把对应工具动态加入模型可用工具集合。
         """
 
-        if not dirs:
-            raise ValueError("dirs 不能为空")
-
-        self.skill_dirs = [Path(_resolve_path(directory)).resolve() for directory in dirs]
-        
-        self.skills: list[Skill] = []
-        for directory in dirs:
-            self.skills.extend(self._read_skills(directory))
-
-        if not self.skills:
-            return
-        
-        self._build_skills_prompt()
+        self._loader = loader
 
         self.tools = [
             # 注册加载技能的工具
             self._create_load_skill_tool(),
             self._create_read_file_tool()
         ]
-        self.grouped_tools = grouped_tools
+        self._grouped_tools = grouped_tools or {}
 
     @override
     def wrap_model_call(
@@ -100,11 +76,12 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         handler: Callable[[ModelRequest[ContextT]], ModelResponse[ResponseT]]
     ) -> ModelResponse[ResponseT]:
 
-        if not self.skills:
+        skills = self._loader.list_skills()
+        if not skills:
             return handler(request)
         
         override_request = self._build_overridden_request(
-            request, self._extract_loaded_skill_names(request.state)
+            request, skills, self._extract_loaded_skill_names(request.state)
         )
         return handler(override_request)
     
@@ -115,11 +92,12 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         handler: Callable[[ModelRequest[ContextT]], Awaitable[ModelResponse[ResponseT]]]
     ) -> ModelResponse[ResponseT]:
         
-        if not self.skills:
+        skills = self._loader.list_skills()
+        if not skills:
             return await handler(request)
         
         override_request = self._build_overridden_request(
-            request, self._extract_loaded_skill_names(request.state)
+            request, skills, self._extract_loaded_skill_names(request.state)
         )
         return await handler(override_request)
     
@@ -144,11 +122,13 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
     def _build_overridden_request(
         self,
         request: ModelRequest[ContextT],
+        skills: list[Skill],
         skill_names: list[str]
     ) -> ModelRequest[ContextT]:
+        skills_prompt = self._build_skills_prompt(skills)
         # 添加到系统消息中
         new_content = list(request.system_message.content_blocks if request.system_message else []) + [
-            {"type": "text", "text": "\n\n" + self.skills_prompt}
+            {"type": "text", "text": "\n\n" + skills_prompt}
         ]
 
         new_tools = [*request.tools]
@@ -178,11 +158,11 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
             Args:
                 skill_name: 要加载的 skill 名称，必须是可以用的技能列表中的名称
             """
-            for skill in self.skills:
-                if skill["name"] == skill_name:
-                    return f"{skill["content"]}"
-                
-            available_skills = ", ".join(s["name"] for s in self.skills)
+            skill = self._loader.get_skill(skill_name)
+            if skill:
+                return f"{skill['content']}"
+                 
+            available_skills = ", ".join(s["name"] for s in self._loader.list_skills())
             return f"技能未找到, 可用的技能: {available_skills}"
         
         # 定义加载 SKills 函数
@@ -212,8 +192,7 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
                 file_path: 读取文件的绝对路径。必须是绝对路径，不能是相对路径
             """
 
-            path = self._resolve_source_file_path(file_path)
-            return path.read_text(encoding="utf-8")
+            return self._loader.resolve_source_content(file_path)
 
         async def aread_source_file(file_path: str) -> str:
             """读取资源文件内容。
@@ -232,88 +211,17 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
             parse_docstring=True
         )
 
-    def _resolve_source_file_path(self, file_path: str) -> Path:
-        path = Path(_resolve_path(file_path)).resolve()
-        for skill_dir in self.skill_dirs:
-            if path == skill_dir or path.is_relative_to(skill_dir):
-                return path
-        raise ValueError(f"文件路径必须在技能目录中: {file_path}")
-    
-    def _build_skills_prompt(self):
-        skill_names = set()
-
+    def _build_skills_prompt(self, skills: list[Skill]) -> str:
         skills_list = []
-        for skill in self.skills:
-            if skill["name"] in skill_names:
-                logger.warning("Skill name '%s' is repetitive, keep the old skill. Repetitive skills from '%s'",
-                               skill["name"], skill["path"]
-                )
-                continue
+        for skill in skills:
             # path 指定 SKILL.md 的来源位置，当需要读取参考文件时，SKILL.md 中指定了相对路径，可以给 LLM 做参考
             skills_list.append(
-                f"- **{skill["name"]}**: {skill["description"]}\npath: {skill["path"]}"
+                f"- **{skill['name']}**: {skill['description']}\npath: {skill['path']}"
             )
-            skill_names.add(skill["name"])
 
-        self.skills_prompt = _SKILLS_SYSTEM_PROMPT.format(
+        return _SKILLS_SYSTEM_PROMPT.format(
             skills_list="\n".join(skills_list)
         )
-
-    def _read_skills(self, directory) -> list[Skill]:
-        if not directory:
-            raise ValueError("directory 不能为空")
-        
-        skill_directory = _resolve_path(directory)
-
-        skill_directory_path = Path(skill_directory)
-        skills = []
-        if not skill_directory_path.exists() or not skill_directory_path.is_dir():
-            return skills
-
-        for path in skill_directory_path.iterdir():
-            if not path.is_dir():
-                continue
-            skill_path = path.joinpath("SKILL.md")
-            if not skill_path.exists():
-                continue
-            skill = self._parse_skill(skill_path)
-            if not skill:
-                continue
-            
-            logger.debug(f"Load skill name: {skill["name"]}, path: {skill["path"]}")
-
-            skills.append(skill)
-
-        return skills
-    
-    def _parse_skill(self, skill_file_path: Path) -> Skill | None:
-        skill_content = skill_file_path.read_text(encoding="utf-8")
-        if not skill_content:
-            return None
-        
-        start_index = skill_content.find("---")
-        if start_index < 0:
-            return None
-        end_index = skill_content.find("---", 3)
-        if end_index < 0:
-            return None
-        frontmatter_str = skill_content[3:end_index].strip()
-        frontmatter = yaml.safe_load(frontmatter_str)
-        content = skill_content[end_index + 3:].strip()
-        skill_name = frontmatter["name"]
-        if len(skill_name) > MAX_SKILL_NAME_LENGTH:
-            logger.warning("Skill name '%s' exceeds %s characters", skill_name, MAX_SKILL_NAME_LENGTH)
-            return None
-        skill_description = frontmatter["description"]
-        if len(skill_description) > MAX_SKILL_DESCRIPTION_LENGTH:
-            logger.warning("Skill description of name '%s' exceeds %s characters", skill_name, MAX_SKILL_NAME_LENGTH)
-            return None
-        return {
-            "name": skill_name,
-            "description": skill_description,
-            "content": content,
-            "path": str(skill_file_path)
-        }
     
     def _extract_loaded_skill_names(self, state: AgentState[Any]) -> list[str]:
         message_list = state["messages"]
@@ -332,34 +240,21 @@ class SkillsMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         return skill_names
     
     def _load_skill_tools(self, skill_names: list[str]) -> list[BaseTool]:
-        if not skill_names or not self.grouped_tools:
+        if not skill_names or not self._grouped_tools:
             return []
         skill_tools = []
         for name in skill_names:
-            if name in self.grouped_tools:
-                skill_tools.extend(self.grouped_tools[name])
+            if name in self._grouped_tools:
+                skill_tools.extend(self._grouped_tools[name])
         return skill_tools
                 
     def _build_overridden_tool_request(self, request: ToolCallRequest) -> ToolCallRequest:
         override_request = request
         tool_name = request.tool_call["name"]
-        for tools in self.grouped_tools.values():
+        for tools in self._grouped_tools.values():
             for tool in tools:
                 if tool.name == tool_name:
                     # 工具没有在创建 agent 或者 middleware 时定义，tool=None
                     # 返回动态匹配的工具
                     return request.override(tool=tool)
         return override_request
-
-
-def _resolve_path(file_path: str) -> str:
-    path = ""
-    if file_path.startswith("/"):
-        path = file_path
-    elif re.search(r"^[a-zA-Z]+:", file_path):
-        path = file_path
-    else:
-        work_dir = Path.cwd()
-        path = str(work_dir) + "/" + file_path.removeprefix("./")
-    return path
-  

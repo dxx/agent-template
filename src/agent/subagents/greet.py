@@ -3,6 +3,7 @@ from pathlib import Path
 
 from agent.llm import create_chat_model
 from agent.middleware import SubAgent, SkillsMiddleware
+from agent.skills import DirectorySkillLoader
 from agent.tools import greet
 from agent.memory import AppAgentContext, AppAgentState
 
@@ -25,7 +26,7 @@ class GreetAgent(SubAgent):
             # 安装 skills 中间件
             middleware=[
                 SkillsMiddleware(
-                    dirs=[str(skill_dir)],
+                    loader=DirectorySkillLoader([str(skill_dir)]),
                     grouped_tools={
                         # 当使用 greet skill 时动态加载 greet 工具
                         "greet": [greet]

@@ -6,6 +6,7 @@ from agent.llm import create_chat_model
 from agent.memory.context import AppAgentContext
 from agent.memory.state import AppAgentState
 from agent.middleware import RouteTaskAgent
+from agent.skills import DirectorySkillLoader
 from agent.tools import greet
 from agent.middleware.prebuild.skills import SkillsMiddleware
 
@@ -26,7 +27,7 @@ class GreetAgent(RouteTaskAgent):
                 state_schema=AppAgentState,
                 middleware=[
                     SkillsMiddleware(
-                        dirs=[str(skill_dir)],
+                        loader=DirectorySkillLoader([str(skill_dir)]),
                         grouped_tools={
                             "greet": [greet],
                         },
