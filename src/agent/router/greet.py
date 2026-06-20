@@ -1,12 +1,10 @@
-from pathlib import Path
-
 from langchain.agents import create_agent
 
 from agent.llm import create_chat_model
 from agent.memory.context import AppAgentContext
 from agent.memory.state import AppAgentState
 from agent.middleware import RouteTaskAgent
-from agent.skills import DirectorySkillLoader
+from agent.skills import RemoteSkillLoader
 from agent.tools import greet
 from agent.middleware.prebuild.skills import SkillsMiddleware
 
@@ -16,9 +14,6 @@ class GreetAgent(RouteTaskAgent):
 
     def __init__(self):
 
-        project_root = Path(__file__).resolve().parent.parent.parent
-        skill_dir = project_root.joinpath("skills")
-
         agent =  create_agent(
                 model=create_chat_model(enable_thinking=False),
                 name="greet",
@@ -27,7 +22,9 @@ class GreetAgent(RouteTaskAgent):
                 state_schema=AppAgentState,
                 middleware=[
                     SkillsMiddleware(
-                        loader=DirectorySkillLoader([str(skill_dir)]),
+                        loader=RemoteSkillLoader(
+                            ["https://raw.githubusercontent.com/dxx/agent-template/refs/heads/main/src/skills/greet/SKILL.md"]
+                        ),
                         grouped_tools={
                             "greet": [greet],
                         },
