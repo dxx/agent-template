@@ -11,18 +11,17 @@ MAX_SKILL_NAME_LENGTH = 64
 MAX_SKILL_DESCRIPTION_LENGTH = 1024
 
 
-def parse_skill(skill_file_path: str) -> Skill | None:
-    """解析技能定义文件。
+def parse_skill(skill_content: str, path: str) -> Skill | None:
+    """解析技能定义内容。
 
     Args:
-        skill_file_path: `SKILL.md` 文件路径。
+        skill_content: 技能定义内容，格式与 `SKILL.md` 一致。
+        path: 技能定义来源路径或 URL。
 
     Returns:
-        解析成功时返回技能信息；文件为空、缺少 YAML frontmatter 或字段超出限制时返回 None。
+        解析成功时返回技能信息；内容为空、缺少 YAML frontmatter 或字段超出限制时返回 None。
     """
 
-    with open(skill_file_path, encoding="utf-8") as skill_file:
-        skill_content = skill_file.read()
     if not skill_content:
         return None
 
@@ -47,5 +46,5 @@ def parse_skill(skill_file_path: str) -> Skill | None:
         "name": skill_name,
         "description": skill_description,
         "content": content,
-        "path": skill_file_path
+        "path": path
     }
