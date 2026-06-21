@@ -381,7 +381,7 @@ class _RouteGraphAgent(RouteTaskAgent):
         for agent in agents:
             name = agent.get_name()
             if name in registry:
-                raise ValueError(f"重复的代理名称: {name}")
+                raise ValueError(f"Duplicate agent: {name}")
             registry[name] = agent
         return registry
 

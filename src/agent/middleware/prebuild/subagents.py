@@ -123,6 +123,8 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     def _register_subagent(sub_agent: SubAgent):
         """注册 SubAgent"""
         agent_name = sub_agent.get_name()
+        if agent_name in _subagent_registry:
+            raise ValueError(f"Duplicate agent: {name}")
         _subagent_registry[agent_name] = sub_agent
 
     def _get_subagent(agent_name: str) -> SubAgent:
