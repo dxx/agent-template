@@ -5,7 +5,7 @@ from config.settings import get_settings
 
 settings = get_settings()
 
-Provider = Literal["bailian", "volcengine", "minimax"]
+Provider = Literal["bailian", "volcengine", "deepseek", "bigmodel", "minimax"]
 """提供商。主要针对不同的提供商处理个性化参数"""
 
 ReasoningEffort = Literal["minimal", "low", "medium", "high"]
@@ -15,6 +15,7 @@ ReasoningEffort = Literal["minimal", "low", "medium", "high"]
 def create_chat_model(
     enable_thinking: bool = True,
     reasoning_effort: ReasoningEffort = "minimal",
+    max_tokens: int | None = None,
     streaming: bool = True,
     stream_token_usage: bool = False,
 ) -> BaseChatModel:
@@ -28,7 +29,11 @@ def create_chat_model(
     - low: 轻量思考，侧重快速响应。
     - medium: 均衡模式，兼顾速度与深度。
     - high: 深度分析，处理复杂问题。
-    
+
+    max_tokens: 模型输出的最大令牌token数量限制。调用 api 时会将参数转换成 max_completion_tokens 字段
+
+    streaming: 是否开启流式
+
     stream_token_usage: 流式返回的最后一个数据包包含 Token 消耗信息
     """
     return init_chat_model(
@@ -37,6 +42,7 @@ def create_chat_model(
         base_url=settings.openai_base_url,
         api_key=SecretStr(settings.openai_api_key) if settings.openai_api_key else None,
         temperature=settings.openai_temperature,
+        max_tokens=max_tokens,
         streaming=streaming,
         stream_usage=stream_token_usage,
         reasoning_effort=reasoning_effort,
@@ -47,14 +53,45 @@ def create_chat_model(
     )
 
 
-def _build_extra_body(provider: Provider, enable_thinking: bool) -> dict[str, Any]:
+def _build_extra_body(
+    provider: Provider,
+    enable_thinking: bool,
+    max_tokens: int | None = None,
+) -> dict[str, Any]:
     """根据不同模型提供商生成其支持的额外参数。"""
+
     if provider == "volcengine":
         return {
             # https://www.volcengine.com/docs/82379/1449737?lang=zh
             # 字节模型开启思考模式
             "thinking": {"type": "enabled" if enable_thinking else "disabled"},
         }
+
+    if provider == "deepseek":
+        extra_body = {
+            # https://api-docs.deepseek.com/zh-cn/api/create-chat-completion
+            # DeepSeek 开启思考模式
+            "thinking": {"type": "enabled" if enable_thinking else "disabled"},
+        }
+
+        if max_tokens:
+            # 外层 max_tokens 会转换成 max_completion_tokens 字段，而 DeepSeek API 暂不支持
+            extra_body["max_tokens"] = max_tokens # type: ignore[arg-type]
+
+        return extra_body
+    
+    if provider == "bigmodel":
+        extra_body = {
+            # https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8
+            # BigModel 开启思考模式
+            "thinking": {"type": "enabled" if enable_thinking else "disabled"},
+        }
+
+        if max_tokens:
+            # 外层 max_tokens 会转换成 max_completion_tokens 字段，而 DeepSeek API 暂不支持
+            extra_body["max_tokens"] = max_tokens # type: ignore[arg-type]
+
+        return extra_body
 
     if provider == "minimax":
         return {
@@ -70,6 +107,4 @@ def _build_extra_body(provider: Provider, enable_thinking: bool) -> dict[str, An
         # https://help.aliyun.com/zh/model-studio/deep-thinking
         # 千问模型开启思考模式
         "enable_thinking": enable_thinking,
-        # 千问模型思考长度
-        "thinking_budget": 50,
     }
