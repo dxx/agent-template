@@ -4,7 +4,11 @@
 
 ### 新增
 
-- 新增 `deepseek` 和 `bigmodel` 模型提供商支持，并支持为模型创建传入 `max_tokens`。([f1b620e](https://github.com/dxx/agent-template/commit/f1b620e))
+- 新增 `deepseek` 和 `bigmodel` 模型提供商支持，并支持为模型创建传入 `max_tokens`。([f1b620e](https://github.com/dxx/agent-template/commit/f1b620ebfd7b93ae88b2c35f6babafd20690c720))
+
+## 变更
+
+- 支持多模态内容记录。([3784d56](https://github.com/dxx/agent-template/commit/3784d56c6df8830fefb82c4f46d98c6ebdb91a7f))
 
 ## 2026-06-20
 
