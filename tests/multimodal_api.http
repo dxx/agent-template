@@ -9,7 +9,7 @@ chat-id: chat_b3425f93-104f-4987-98e8-523674f967fd
 
 {
   "content": [
-    {"type": "image_url", "image_url": {"url": "https://img0.baidu.com/it/u=2944321954,3468161118&fm=253&app=138&f=JPEG?w=800&h=1400"}},
+    {"type": "image_url", "image_url": {"url": "https://img0.baidu.com/it/u=2944321954,3468161118&fm=253&app=138&f.jpeg"}},
     {"type": "text", "text": "描述下这个图片"}
   ]
 }
