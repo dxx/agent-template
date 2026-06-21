@@ -87,6 +87,10 @@ uv run src/main.py
 - [多模态](./docs/multimodal.md)
 - [历史消息](./docs/message.md)
 
+## 前端
+
+针对 agent-template 开发的前端 Web 项目 [agent-template-ui](https://github.com/dxx/agent-template-ui)。
+
 ## 更新日志
 
 [CHANGELOG](./CHANGELOG.md)。
