@@ -169,9 +169,13 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
                         if (block.get("type") == "text" and isinstance(block.get("text"), str) and block.get("text")):
                             blocks.append(block.get("text"))
                         elif block.get("type") in ["image", "image_url"]:
-                            blocks.append("[图片]")
+                            image_url = block.get("url") or block.get("image_url", {}).get("url")
+                            if image_url:
+                                blocks.append(f"<msg-img-url>{image_url}</msg-img-url>")
                         elif block.get("type") in ["video", "video_url"]:
-                            blocks.append("[视频]")
+                            video_url = block.get("url") or block.get("video_url", {}).get("url")
+                            if video_url:
+                                blocks.append(f"<msg-video-url>{video_url}</msg-video-url>")
                         else:
                             blocks.append("[未知]")
                 text_value = "\n".join(
