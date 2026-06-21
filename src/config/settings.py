@@ -33,10 +33,10 @@ class Settings(BaseSettings):
     app_host: str = Field(default="127.0.0.1", validation_alias="APP_HOST")
     app_port: int = Field(default=8000, validation_alias="APP_PORT")
 
-    log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
-    log_handlers: list[str] = Field(validation_alias="LOG_HANDLERS")
+    log_level: str = Field(default="info", validation_alias="LOG_LEVEL")
+    log_handlers: list[str] = Field(default=["console"], validation_alias="LOG_HANDLERS")
     log_format_type: str = Field(default="text", validation_alias="LOG_FORMAT_TYPE")
-    log_file: str = Field(default="app.log", validation_alias="LOG_FILE")
+    log_file: str = Field(default="logs/app.log", validation_alias="LOG_FILE")
 
     openapi_url: str = Field(default="/openapi.json", validation_alias="OPENAPI_URL")
 
