@@ -142,8 +142,8 @@ agent-template/
 |--------|------|
 | `SubAgentMiddleware` | 子代理调度，通过 `task` 工具分发任务给子代理 |
 | `RouteAgentMiddleware` | 路由代理调度，通过 `route` 工具自动选择并调用路由任务代理 |
-| `SkillsMiddleware` | 技能系统支持，动态加载 `skills/` 目录下的技能 |
-| `SummarizationMiddleware` | 消息超过30条或token超过10000时自动摘要 |
+| `SkillsMiddleware` | 技能系统支持，动态加载技能，向系统提示词注入可用技能列表 |
+| `SummarizationMiddleware` | 消息超过 30 条或 token 超过 10000 时自动摘要 |
 | `ToolCallsPatchMiddleware` | 检查工具调用是否正确执行，补充缺失的 ToolMessage |
 | `ToolErrorHandlingMiddleware` | 工具调用错误时返回 ToolMessage，让 agent 继续运行 |
 | `HumanInTheLoopMiddleware` | 人工介入，支持 approve/reject 决策 |
@@ -183,9 +183,10 @@ agent-template/
 - 支持 `ignore_tools` 参数屏蔽不需要的工具
 - 支持 `callbacks` 和 `tool_interceptors` 扩展功能
 
-**技能系统** (`agent/skills/`):
-- `SkillsMiddleware`: 从 `skills/` 目录加载技能定义，向系统提示词注入可用技能列表
-- `load_skill` 工具: 动态加载技能详细描述和参考文档路径
+**技能系统** (`skills/`):
+- `SkillLoader`: 技能加载器抽象定义
+- `DirectorySkillLoader`: 从本地目录加载技能
+- `RemoteSkillLoader`: 从远程加载技能
 
 **状态管理** (`memory/`):
 - `AppAgentState`: Agent 运行状态，包含消息历史和子代理调用记录
@@ -234,7 +235,7 @@ cp .env.example .env
 ```
 
 主要配置项：
-- `OPENAI_PROVIDER`: 模型提供商，可选 `bailian`、`volcengine`、`minimax`
+- `OPENAI_PROVIDER`: 模型提供商，可选 `bailian`、`volcengine`、`deepseek`、`bigmodel`、`minimax`
 - `OPENAI_API_KEY`: 你的 API Key
 - `OPENAI_BASE_URL`: API 地址
 - `OPENAI_MODEL`: 模型名称
@@ -272,7 +273,7 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 可增加额外的环境配置，配置文件名格式: `.env.环境名称`，然后在 `config/settings.py` 中增加对应的代码。
 
 
-### 环境变量说明
+### 环境配置说明
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
@@ -282,15 +283,15 @@ GET /test/chat/stream?user_id=test_user&chat_id=test_chat&content=你好
 | `LOG_HANDLERS` | 日志处理方式 (console/file) | ["console"] |
 | `LOG_FORMAT_TYPE` | 日志格式类型 (text/json) | text |
 | `LOG_FILE` | 日志文件路径 | logs/app.log |
-| `CORS_ALLOW_ORIGINS` | CORS 允许的 origins，JSON 数组格式 | ["*"] |
+| `CORS_ALLOW_ORIGINS` | CORS 允许的 origins，JSON 数组格式 | 空 |
 | `CORS_ALLOW_CREDENTIALS` | 是否允许跨域请求携带凭证 | false |
-| `OPENAI_PROVIDER` | 模型提供商，可选：bailian、volcengine、minimax | bailian |
-| `OPENAI_BASE_URL` | OpenAI 兼容 API 地址 | - (必填) |
-| `OPENAI_API_KEY` | API Key | - (必填) |
+| `OPENAI_PROVIDER` | 模型提供商，可选：bailian、volcengine、deepseek、bigmodel、minimax | - (必填) |
+| `OPENAI_BASE_URL` | OpenAI 兼容 API 地址，会自动补充 `/chat/completions` | - (必填) |
+| `OPENAI_API_KEY` | API Key，可引用环境变量如 ${API_KEY} | - (必填) |
 | `OPENAI_MODEL` | 模型名称 | - (必填) |
 | `OPENAI_TEMPERATURE` | 温度参数 | 0.7 |
 | `OPENAPI_URL` | Swagger 文档路径 (设为 "" 禁用) | /openapi.json |
-| `POSTGRES_MEMORY_CONN_STR` | Postgres 连接字符串（用于 checkpointer 和 store） | - |
+| `POSTGRES_MEMORY_CONN_STR` | Postgres 连接字符串（用于 checkpointer 和 store） | - (必填) |
 
 
 ## 对话流程
@@ -380,3 +381,7 @@ description: <技能简短描述>
 ### 生产禁用
 
 生产环境通过配置 `OPENAPI_URL=""` 或环境变量禁用
+
+## 更新日志
+
+[CHANGELOG](./CHANGELOG.md)
