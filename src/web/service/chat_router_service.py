@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from langchain_core.messages import AIMessage, ToolMessage, AnyMessage, AIMessageChunk
 from langchain_core.runnables import RunnableConfig
@@ -31,7 +31,7 @@ router_agent = create_router_agent()
 async def router_chat_response(
     app_state: AppState,
     request: ChatRequest,
-) -> AsyncIterable[ChatResponse]:
+) -> AsyncIterator[ChatResponse]:
     """路由 Agent 流式对话响应。"""
     content = request.content
     decision = request.decision

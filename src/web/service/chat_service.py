@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 from langchain_core.messages import AIMessage, ToolMessage, AnyMessage, AIMessageChunk
 from langgraph.types import Interrupt, Command
 from langchain_core.runnables import RunnableConfig
@@ -30,7 +30,7 @@ main_agent = create_main_agent()
 async def chat_response(
     app_state: AppState,
     request: ChatRequest
-) -> AsyncIterable[ChatResponse]:
+) -> AsyncIterator[ChatResponse]:
     content = request.content
     decision = request.decision
 
