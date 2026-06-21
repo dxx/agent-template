@@ -1,5 +1,39 @@
 # 更新日志
 
+## 2026-06-21
+
+### 新增
+
+- 新增 `deepseek` 和 `bigmodel` 模型提供商支持，并支持为模型创建传入 `max_tokens`。([f1b620e](https://github.com/dxx/agent-template/commit/f1b620e))
+
+## 2026-06-20
+
+### 新增
+
+- 新增 `SkillLoader` 抽象和 `DirectorySkillLoader`，将 skills 加载逻辑从 `SkillsMiddleware` 中解耦。([3f17f67](https://github.com/dxx/agent-template/commit/3f17f67))
+- 新增 `RemoteSkillLoader`，支持通过多个远程 `SKILLS.md` 地址加载技能。([6d04e4c](https://github.com/dxx/agent-template/commit/6d04e4c))
+
+### 变更
+
+- 调整 `SkillsMiddleware` 为依赖 loader 获取技能列表、加载技能内容和读取资源内容。([dd9a1fe](https://github.com/dxx/agent-template/commit/dd9a1fe))
+- 接入 `RemoteSkillLoader` 使用示例。([7fb1ded](https://github.com/dxx/agent-template/commit/7fb1ded))
+
+## 2026-06-19
+
+### 变更
+
+- 调整 Agent 和子代理相关方法签名。([be88f57](https://github.com/dxx/agent-template/commit/be88f57))
+
+### 依赖
+
+- 升级 `langchain` 相关依赖版本。([306bfbe](https://github.com/dxx/agent-template/commit/306bfbe))
+
+## 2026-06-16
+
+### 变更
+
+- 支持 Windows 盘符路径处理。([69dade0](https://github.com/dxx/agent-template/commit/69dade0))
+
 ## 2026-06-14
 
 ### 新增
