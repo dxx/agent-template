@@ -89,7 +89,7 @@ uv run src/main.py
 
 ## 前端
 
-针对 agent-template 开发的前端 Web 项目 [agent-template-ui](https://github.com/dxx/agent-template-ui)。
+针对 agent-template 开发的 Web 前端项目 [agent-template-ui](https://github.com/dxx/agent-template-ui)。
 
 ## 更新日志
 
