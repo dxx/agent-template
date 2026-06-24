@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 from langchain.agents import create_agent
 from langgraph.graph.state import CompiledStateGraph
@@ -24,13 +25,29 @@ from agent.router.research import ResearchAgent
 from agent.router.review import ReviewAgent
 from agent.router.writing import WritingAgent
 
-_checkpointer = get_checkpointer()
-_store = get_store()
+_router_agent = None
+_router_agent_lock = asyncio.Lock()
 
-_message_record_middleware = MessageRecordMiddleware(_store)
+_message_record_middleware: MessageRecordMiddleware | None = None
+
 
 def get_message_record_middleware():
+    global _message_record_middleware
+    if _message_record_middleware is None:
+        _message_record_middleware = MessageRecordMiddleware(get_store())
     return _message_record_middleware
+
+
+async def get_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any, Any]:
+    """获取全局路由 Agent，避免并发请求重复初始化。"""
+    global _router_agent
+    if _router_agent is not None:
+        return _router_agent
+
+    async with _router_agent_lock:
+        if _router_agent is None:
+            _router_agent = create_router_agent()
+        return _router_agent
 
 
 def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any, Any]:
@@ -39,6 +56,11 @@ def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any
     使用 router 目录下的写作、研究、审核、招待和文件管理代理，由
     `RouterAgent` 根据 `query` 动态路由并编排执行。
     """
+
+    checkpointer = get_checkpointer()
+    store = get_store()
+    
+    message_record_middleware = get_message_record_middleware()
 
     agents = [
         WritingAgent(),
@@ -59,8 +81,8 @@ def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any
         name="router_main_agent",
         model=create_chat_model(enable_thinking=False),
         context_schema=AppAgentContext,
-        checkpointer=_checkpointer,
-        store=_store,
+        checkpointer=checkpointer,
+        store=store,
         middleware=[
             route_agent_middleware,
             # 注入系统当前时间提示词
@@ -80,6 +102,6 @@ def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any
             ),
             ToolCallsPatchMiddleware(),
             ToolErrorHandlingMiddleware(),
-            _message_record_middleware, # type: ignore[arg-type]
+            message_record_middleware, # type: ignore[arg-type]
         ]
     )

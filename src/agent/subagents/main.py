@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 from langchain.agents import create_agent
 from langgraph.graph.state import CompiledStateGraph
@@ -27,14 +28,29 @@ from agent.subagents.greet import GreetAgent
 from agent.subagents.user import UserAgent
 
 
-_checkpointer = get_checkpointer()
-_store = get_store()
+_main_agent = None
+_main_agent_lock = asyncio.Lock()
 
-_message_record_middleware = MessageRecordMiddleware(_store)
+_message_record_middleware: MessageRecordMiddleware | None = None
 
 
 def get_message_record_middleware():
+    global _message_record_middleware
+    if _message_record_middleware is None:
+        _message_record_middleware = MessageRecordMiddleware(get_store())
     return _message_record_middleware
+
+
+async def get_main_agent() -> CompiledStateGraph[AppAgentState, AppAgentContext, Any, Any]:
+    """获取全局主 Agent，避免并发请求重复初始化。"""
+    global _main_agent
+    if _main_agent is not None:
+        return _main_agent
+
+    async with _main_agent_lock:
+        if _main_agent is None:
+            _main_agent = create_main_agent()
+        return _main_agent
 
 
 def create_main_agent() -> CompiledStateGraph[AppAgentState, AppAgentContext, Any, Any]:
@@ -43,6 +59,11 @@ def create_main_agent() -> CompiledStateGraph[AppAgentState, AppAgentContext, An
     main_chat_model = create_chat_model(enable_thinking=False)
 
     summarization_chat_model = create_chat_model()
+
+    checkpointer = get_checkpointer()
+    store = get_store()
+    
+    message_record_middleware = get_message_record_middleware()
 
     sub_agents = [
         FileManagerAgent(),
@@ -59,8 +80,8 @@ def create_main_agent() -> CompiledStateGraph[AppAgentState, AppAgentContext, An
         model=main_chat_model,
         context_schema=AppAgentContext,
         state_schema=AppAgentState,
-        checkpointer=_checkpointer,
-        store=_store,
+        checkpointer=checkpointer,
+        store=store,
         middleware=[
             SubAgentMiddleware(
                 sub_agents=sub_agents
@@ -82,6 +103,6 @@ def create_main_agent() -> CompiledStateGraph[AppAgentState, AppAgentContext, An
             ),
             ToolCallsPatchMiddleware(),
             ToolErrorHandlingMiddleware(),
-            _message_record_middleware, # type: ignore[arg-type]
+            message_record_middleware, # type: ignore[arg-type]
         ]
     )

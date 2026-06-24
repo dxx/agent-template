@@ -4,7 +4,7 @@ from langchain_core.messages import AIMessage, ToolMessage, AnyMessage, AIMessag
 from langgraph.types import Interrupt, Command
 from langchain_core.runnables import RunnableConfig
 
-from agent.subagents import create_main_agent
+from agent.subagents import get_main_agent
 from agent.memory import AppAgentContext, AppAgentState
 from log import get_logger
 from web.schemas import (
@@ -23,14 +23,14 @@ logger = get_logger(__name__)
 
 settings = get_settings()
 
-# 创建 main_agent
-main_agent = create_main_agent()
-
 
 async def chat_response(
     app_state: AppState,
     request: ChatRequest
 ) -> AsyncIterator[ChatResponse]:
+    
+    main_agent = await get_main_agent()
+
     content = request.content
     decision = request.decision
 

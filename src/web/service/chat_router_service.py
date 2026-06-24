@@ -6,7 +6,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command, Interrupt
 
 from agent.memory import AppAgentContext
-from agent.router import create_router_agent
+from agent.router import get_router_agent
 from log import get_logger
 from web.schemas import (
     AppState,
@@ -24,15 +24,15 @@ logger = get_logger(__name__)
 
 settings = get_settings()
 
-# 创建 router_agent
-router_agent = create_router_agent()
-
 
 async def router_chat_response(
     app_state: AppState,
     request: ChatRequest,
 ) -> AsyncIterator[ChatResponse]:
     """路由 Agent 流式对话响应。"""
+
+    router_agent = await get_router_agent()
+
     content = request.content
     decision = request.decision
 

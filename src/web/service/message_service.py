@@ -13,10 +13,6 @@ _NAMESPACE_CHAT_ID = ("user_chat_id",)
 
 _MAX_CHAT_COUNT = 10
 
-_checkpointer = get_checkpointer()
-_store = get_store()
-_message_record = get_message_record_middleware()
-
 
 async def create_chat_id(user_id: str) -> str:
     """创建新的 chat id"""
@@ -31,7 +27,7 @@ async def create_chat_id(user_id: str) -> str:
 async def get_user_chat_ids(user_id: str) -> list[str]:
     """获取用户的所有 chat id"""
     key = user_id
-    existing = await _store.aget(_NAMESPACE_CHAT_ID, key)
+    existing = await get_store().aget(_NAMESPACE_CHAT_ID, key)
     if existing and existing.value:
         return existing.value.get("chat_ids", [])
     return []
@@ -45,7 +41,7 @@ async def is_chat_id_exists(user_id: str, chat_id: str) -> bool:
 
 async def get_chat_message_list(user_id: str, chat_id: str) -> list[Message]:
     """获取指定对话的消息列表（转换为 Message schema）"""
-    raw_messages = await _message_record.get_history(user_id, chat_id)
+    raw_messages = await get_message_record_middleware().get_history(user_id, chat_id)
     messages = []
     for msg in raw_messages:
         converted = _convert_to_message_record(msg)
@@ -69,20 +65,20 @@ async def get_all_chat_messages(user_id: str) -> list[MessageResponse]:
 async def delete_chat_messages(user_id: str, chat_id: str) -> bool:
     """删除指定对话的所有消息"""
     # 从 message_record 中清除消息历史
-    await _message_record.clear_history(user_id, chat_id)
+    await get_message_record_middleware().clear_history(user_id, chat_id)
 
     # 从 checkpointer 中删除消息
     thread_id = format_thread_id(user_id, chat_id)
-    await _checkpointer.adelete_thread(thread_id)
+    await get_checkpointer().adelete_thread(thread_id)
 
     # 从用户的 chat_ids 列表中移除该 chat_id
     key = user_id
-    existing = await _store.aget(_NAMESPACE_CHAT_ID, key)
+    existing = await get_store().aget(_NAMESPACE_CHAT_ID, key)
     if existing and existing.value:
         chat_ids = existing.value.get("chat_ids", [])
         if chat_id in chat_ids:
             chat_ids.remove(chat_id)
-            await _store.aput(_NAMESPACE_CHAT_ID, key, {"chat_ids": chat_ids})
+            await get_store().aput(_NAMESPACE_CHAT_ID, key, {"chat_ids": chat_ids})
             return True
     return False
 
@@ -91,14 +87,16 @@ async def delete_all_chat_messages(user_id: str) -> bool:
     """删除用户所有对话的消息"""
     chat_ids = await get_user_chat_ids(user_id)
 
+    checkpointer = get_checkpointer()
+
     # 删除每个对话的消息
     for chat_id in chat_ids:
         thread_id = format_thread_id(user_id, chat_id)
-        await _checkpointer.adelete_thread(thread_id)
+        await checkpointer.adelete_thread(thread_id)
 
     # 删除用户的 chat_ids 记录
     key = user_id
-    await _store.adelete(_NAMESPACE_CHAT_ID, key)
+    await get_store().adelete(_NAMESPACE_CHAT_ID, key)
 
     return True
 
@@ -117,14 +115,15 @@ async def _check_max_chat_count(user_id: str) -> tuple[bool, int]:
 async def _record_chat_id(user_id: str, chat_id: str):
     """记录 chat id"""
     key = user_id
-    existing = await _store.aget(_NAMESPACE_CHAT_ID, key)
+    store = get_store()
+    existing = await store.aget(_NAMESPACE_CHAT_ID, key)
     if existing and existing.value:
         chat_ids = existing.value.get("chat_ids", [])
         if chat_id not in chat_ids:
             chat_ids.append(chat_id)
-            await _store.aput(_NAMESPACE_CHAT_ID, key, {"chat_ids": chat_ids})
+            await store.aput(_NAMESPACE_CHAT_ID, key, {"chat_ids": chat_ids})
     else:
-        await _store.aput(_NAMESPACE_CHAT_ID, key, {"chat_ids": [chat_id]})
+        await store.aput(_NAMESPACE_CHAT_ID, key, {"chat_ids": [chat_id]})
 
 
 def _convert_to_message_record(msg: MessageRecord) -> Message | None:

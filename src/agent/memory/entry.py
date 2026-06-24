@@ -11,7 +11,7 @@ _memory_store = InMemoryStore()
 
 def get_checkpointer() -> BaseCheckpointSaver:
     # 生产环境使用 async_postgres_checkpointer, 先在 web/server.py 中初始化
-    # return get_async_postgres_checkpointer(),
+    # return get_async_postgres_checkpointer()
     return _memory_checkpointer
 
 def get_store() -> BaseStore:

@@ -4,6 +4,7 @@
 from agent.subagents.agent_enum import SubAgentEnum
 from agent.subagents.main import (
     create_main_agent,
+    get_main_agent,
     get_checkpointer,
     get_store,
     get_message_record_middleware,
@@ -12,6 +13,7 @@ from agent.subagents.main import (
 __all__ = [
     "SubAgentEnum",
     "create_main_agent",
+    "get_main_agent",
     "get_checkpointer",
     "get_store",
     "get_message_record_middleware"
