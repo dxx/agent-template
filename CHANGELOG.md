@@ -1,5 +1,23 @@
 # 更新日志
 
+## 2026-06-25
+
+### 变更
+
+- 改为懒加载创建主 Agent 和路由 Agent，避免模块导入时提前初始化资源，并通过异步锁避免并发请求重复初始化。([63fc370](https://github.com/dxx/agent-template/commit/63fc370b92305f2aba07d2c7e33ec07064dd13ca))
+
+## 2026-06-24
+
+### 变更
+
+- Windows 平台启动时使用兼容的 SelectorEventLoop。([af370d5](https://github.com/dxx/agent-template/commit/af370d577135e470c63d14be2dbc7388d46525af))
+
+## 2026-06-23
+
+### 变更
+
+- 补充 README 项目动机说明。([bcdf7c6](https://github.com/dxx/agent-template/commit/bcdf7c6d1050809e6fcdcd782d51822a03618ff2))
+
 ## 2026-06-21
 
 ### 新增
