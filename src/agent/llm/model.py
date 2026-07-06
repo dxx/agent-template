@@ -1,7 +1,7 @@
 from typing import Any, Literal
 from langchain.chat_models import init_chat_model, BaseChatModel
 from pydantic import SecretStr
-from config.settings import get_settings
+from config import get_settings
 
 settings = get_settings()
 

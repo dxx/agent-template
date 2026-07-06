@@ -10,7 +10,7 @@ from web.middleware import ChatMiddleware, AuthMiddleware
 from web.schemas import ApiResult, CODE_ERROR, CODE_VALIDATION_ERROR
 from exception import SystemException
 from log import get_logger
-from config.settings import get_settings
+from config import get_settings
 from agent.memory import (
     init_postgres_checkpointer,
     close_postgres_checkpointer,

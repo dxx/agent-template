@@ -4,7 +4,7 @@ from psycopg_pool import AsyncConnectionPool
 from langgraph.store.postgres.aio import AsyncPostgresStore
 
 from log import get_logger
-from config.settings import get_settings
+from config import get_settings
 
 logger = get_logger(__name__)
 
