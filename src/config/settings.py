@@ -30,6 +30,7 @@ default_env_path = path.joinpath(".env")
 
 class Settings(BaseSettings):
     app_env: str
+    app_id: str = Field(validation_alias="APP_ID")
     app_host: str = Field(default="127.0.0.1", validation_alias="APP_HOST")
     app_port: int = Field(default=8000, validation_alias="APP_PORT")
 

@@ -14,6 +14,13 @@ _rename_fields = {
     "asctime": "log_time"
 }
 
+class _AppDefaultFilter(logging.Filter):
+    """给每条日志记录注入默认字段"""
+    def filter(self, record):
+        record.app_id = settings.app_id if settings.app_id else "N/A"
+        record.app_env = settings.app_env
+        return True
+
 def init_logging():
     """初始化 logging"""
     formatter = _get_formatter(settings.log_format_type)
@@ -32,6 +39,7 @@ def init_logging():
         for handler in handlers:
             handler.setLevel(level)
             handler.setFormatter(formatter)
+            handler.addFilter(_AppDefaultFilter())
             root_logger.addHandler(handler)
 
     return root_logger
@@ -43,14 +51,14 @@ def _get_formatter(log_format_type: str) -> logging.Formatter:
     if log_format_type == "json":
         # json 内容
         return json.JsonFormatter(
-            fmt="%(levelname)s %(asctime)s %(name)s %(message)s %(pathname)s",
+            fmt="%(levelname)s %(asctime)s %(app_env)s %(app_id)s %(name)s %(message)s %(pathname)s",
             datefmt="%Y-%m-%d %H:%M:%S",
             json_ensure_ascii=False,
             rename_fields=_rename_fields
         )
     # 文本内容
     return logging.Formatter(
-        fmt="[%(levelname)s - %(asctime)s - %(name)s] - %(message)s - %(pathname)s",
+        fmt="[%(levelname)s - %(asctime)s - %(app_env)s - %(app_id)s - %(name)s] - %(message)s - %(pathname)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
