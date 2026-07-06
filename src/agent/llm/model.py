@@ -3,8 +3,6 @@ from langchain.chat_models import init_chat_model, BaseChatModel
 from pydantic import SecretStr
 from config import get_settings
 
-settings = get_settings()
-
 Provider = Literal["bailian", "volcengine", "deepseek", "bigmodel", "minimax"]
 """提供商。主要针对不同的提供商处理个性化参数"""
 
@@ -36,6 +34,7 @@ def create_chat_model(
 
     stream_token_usage: 流式返回的最后一个数据包包含 Token 消耗信息
     """
+    settings = get_settings()
     return init_chat_model(
         model=settings.openai_model,
         model_provider="openai",

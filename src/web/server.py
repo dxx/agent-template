@@ -9,8 +9,8 @@ from web.api import health_router, main_chat_router, route_chat_router, message_
 from web.middleware import ChatMiddleware, AuthMiddleware
 from web.schemas import ApiResult, CODE_ERROR, CODE_VALIDATION_ERROR
 from exception import SystemException
-from log import get_logger
 from config import get_settings
+from log import get_logger
 from agent.memory import (
     init_postgres_checkpointer,
     close_postgres_checkpointer,
@@ -20,6 +20,8 @@ from agent.memory import (
 
 logger = get_logger(__name__)
 
+# 模块级加载：FastAPI app 实例化与 CORS 中间件配置依赖这些字段，
+# 它们属于启动时确定的固定配置。
 settings = get_settings()
 
 
@@ -30,6 +32,7 @@ async def lifespan(app: FastAPI):
     logger.info(
         "Application started...",
     )
+
     logger.info("app_env=%s", settings.app_env)
 
     # 使用 Postgres checkpointer 时打开

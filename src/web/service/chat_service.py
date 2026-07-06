@@ -21,8 +21,6 @@ from web.session import format_thread_id
 
 logger = get_logger(__name__)
 
-settings = get_settings()
-
 
 async def chat_response(
     app_state: AppState,
@@ -164,6 +162,7 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
     tool_calls = [] invalid_tool_calls = []
     """
 
+    settings = get_settings()
     if settings.app_env == AppEnv.DEV.value:
         # llm 回复的完整消息
         if isinstance(message, AIMessage) and message.tool_calls:

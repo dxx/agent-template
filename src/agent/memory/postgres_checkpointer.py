@@ -8,8 +8,6 @@ from config import get_settings
 
 logger = get_logger(__name__)
 
-settings = get_settings()
-
 # 全局的 checkpointer 和 connection pool
 _async_postgres_checkpointer: AsyncPostgresSaver | None = None
 _async_postgres_conn_pool: AsyncConnectionPool | None = None
@@ -18,8 +16,6 @@ _init_lock = asyncio.Lock()
 
 # 配置在配置文件中
 # CONNECTION_STRING = "postgresql://postgres:postgres@localhost:5432/langchain"
-
-CONNECTION_STRING = settings.postgres_memory_conn_str
 
 
 async def init_postgres_checkpointer():
@@ -32,10 +28,11 @@ async def init_postgres_checkpointer():
     async with _init_lock:
         if _async_postgres_checkpointer is not None:
             return
-        
+
+        settings = get_settings()
         # 注意：生产环境建议配置好 min_size, max_size 等参数
         conn_pool = AsyncConnectionPool(
-            CONNECTION_STRING,
+            settings.postgres_memory_conn_str,
             open=False, # 禁止打开连接，稍后调用 open
             timeout=10,
             # 手动管理连接以下参数必须设置

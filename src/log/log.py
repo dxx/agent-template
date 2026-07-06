@@ -6,8 +6,6 @@ from logging.handlers import TimedRotatingFileHandler
 
 from config import get_settings, Settings
 
-settings = get_settings()
-
 # 定义重命名规则：{ "原字段名": "新字段名" }
 _rename_fields = {
     "levelname": "level",
@@ -17,12 +15,15 @@ _rename_fields = {
 class _AppDefaultFilter(logging.Filter):
     """给每条日志记录注入默认字段"""
     def filter(self, record):
+        settings = get_settings()
         record.app_id = settings.app_id if settings.app_id else "N/A"
         record.app_env = settings.app_env
         return True
 
 def init_logging():
     """初始化 logging"""
+    settings = get_settings()
+
     formatter = _get_formatter(settings.log_format_type)
 
     handlers = _get_handlers(settings)
