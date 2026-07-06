@@ -57,6 +57,7 @@ env_file=[default_env_path, env_path]
 示例：
 
 ```env
+APP_ID=agent-template
 APP_HOST=127.0.0.1
 APP_PORT=8000
 
@@ -108,6 +109,7 @@ settings = reload_settings()
 | 环境变量 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `APP_ENV` | `str` | `dev` | 应用运行环境，支持 `dev`、`prod`。 |
+| `APP_ID` | `str` | - | 应用的标识。 |
 | `APP_HOST` | `str` | `127.0.0.1` | 应用监听地址。 |
 | `APP_PORT` | `int` | `8000` | 应用监听端口。 |
 | `OPENAPI_URL` | `str` | `/openapi.json` | OpenAPI schema 地址。 |
