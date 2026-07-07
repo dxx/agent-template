@@ -22,10 +22,7 @@ if _app_env not in (item.value for item in AppEnv):
     raise ValueError(f"APP_ENV is incorrect")
 
 # 从当前模块往上找到 src，和 src 同级别，.env 文件和 src 目录同级
-path = Path(__file__).resolve().parent.parent.parent
-
-env_path = path.joinpath(f".env.{_app_env}")
-default_env_path = path.joinpath(".env")
+_project_root = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
@@ -55,7 +52,7 @@ class Settings(BaseSettings):
     postgres_memory_conn_str: str = Field(validation_alias="POSTGRES_MEMORY_CONN_STR")
 
     model_config = SettingsConfigDict(
-        env_file=[default_env_path, env_path],
+        env_file=[_project_root / ".env", _project_root / f".env.{_app_env}"],
         env_file_encoding="utf-8",
         extra="ignore",
     )
