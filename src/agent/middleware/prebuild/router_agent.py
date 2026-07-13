@@ -464,7 +464,7 @@ class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
 
 def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> StructuredTool:
     def route(runtime: ToolRuntime[Any, AgentState]) -> str:
-        """通过路由处理处理任务。"""
+        """通过路由处理任务。"""
         result = router_agent.invoke(
             _build_router_input(runtime.state),
             context=runtime.context,
@@ -472,7 +472,7 @@ def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> Struc
         return result["final_result"]
 
     async def aroute(runtime: ToolRuntime[Any, AgentState]) -> str:
-        """通过路由处理处理任务。"""
+        """通过路由处理任务。"""
         result = await router_agent.ainvoke(
             _build_router_input(runtime.state),
             context=runtime.context,
@@ -481,7 +481,7 @@ def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> Struc
 
     return StructuredTool.from_function(
         name=tool_name,
-        description="通过路由处理处理任务。",
+        description="通过路由处理任务。",
         func=route,
         coroutine=aroute,
     )
