@@ -134,7 +134,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     
     def task(
         agent_name: Annotated[str, "代理名称。必须是工具描述中的代理名称"],
-        task_input: Annotated[str, "代执行任务的内容，包含必要的上下文信息"],
+        task_input: Annotated[str, "执行任务的内容，包含必要的上下文信息"],
         runtime: ToolRuntime[Any, AgentState]
     ) -> str | Command:
         """分发给指定的子代理执行任务"""
@@ -175,7 +175,7 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
     
     async def atask(
         agent_name: Annotated[str, "代理名称。必须是工具描述中的代理名称"],
-        task_input: Annotated[str, "代执行任务的内容，包含必要的上下文信息"],
+        task_input: Annotated[str, "执行任务的内容，包含必要的上下文信息"],
         runtime: ToolRuntime[Any, AgentState]
     ) -> str | Command:
         """分发给指定的子代理执行任务"""
