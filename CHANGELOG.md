@@ -1,5 +1,17 @@
 # 更新日志
 
+## 2026-07-15
+
+### 依赖
+
+- 升级 `uvicorn` 版本。([ab5b0b4](https://github.com/dxx/agent-template/commit/ab5b0b4689af2a8be14bd22c4ce93f3eca9f64dd))
+
+## 2026-07-06
+
+### 新增
+
+- 新增 `APP_ID` 属性配置。([331301f](https://github.com/dxx/agent-template/commit/331301f0e161394b780338f9df681d0c618a8ab9))
+
 ## 2026-06-25
 
 ### 变更
