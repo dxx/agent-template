@@ -52,6 +52,26 @@ uv run src/main.py
 - `tests/multimodal_api.http` - 多模态 API 测试
 - `tests/skills_api.http` - 技能 API 测试
 
+### 5. Docker 运行
+
+构建镜像：
+
+```bash
+docker build -t agent-template .
+```
+
+运行容器：
+
+```bash
+docker run -d --name agent-template --volume "$PWD/logs:/app/logs" -p 8000:8000 -e "APP_ENV=dev" -e "OPENAI_API_KEY=$MINIMAX_API_KEY" -e "TZ=Asia/Shanghai" agent-template
+```
+
+- `--volume "$PWD/logs:/app/logs"`: 将容器 /app/logs 目录挂载到当前目录下的 logs 目录中
+- `-p 8000:8000`: 将容器中 8000 端口映射到主机 8000。跟配置文件中的端口保持一致
+- `-e "APP_ENV=dev"`: 指定当前环境，将 APP_ENV 注入到容器环境变量中，供应用读取当前环境
+- `-e "OPENAI_API_KEY=$MINIMAX_API_KEY"`: 将 MINIMAX_API_KEY 环境变量赋值给 OPENAI_API_KEY，并把 OPENAI_API_KEY 注入到容器环境变量中，环境变量优先于配置文件加载
+- `-e "TZ=Asia/Shanghai"`: 指定时区
+
 ## 对话流程
 
 ```
