@@ -284,7 +284,7 @@ class ResearchAgent(RouteTaskAgent):
         agent = create_agent(
             model=create_chat_model(),
             name=SubAgentEnum.RESEARCH.value,
-            system_prompt=AGENT_RESEARCH_PROMPT,
+            system_prompt=AGENT_PROMPT_RESEARCH,
             context_schema=AppAgentContext,
             middleware=[
                 MCPClientMiddleware(
@@ -307,7 +307,7 @@ class ResearchAgent(RouteTaskAgent):
 
         super().__init__(
             name=SubAgentEnum.RESEARCH.value,
-            description="擅长从多个信息源收集和整理信息",
+            description=AGENT_DESCRIPTION_RESEARCH,
             agent=agent,
         )
 ```
@@ -322,7 +322,7 @@ class FileManagerAgent(RouteTaskAgent):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
             name=SubAgentEnum.FILE_MANAGER.value,
-            system_prompt=AGENT_FILE_MANAGER_PROMPT,
+            system_prompt=AGENT_PROMPT_FILE_MANAGER,
             context_schema=AppAgentContext,
             tools=[read_file, write_file],
             middleware=[
@@ -333,6 +333,12 @@ class FileManagerAgent(RouteTaskAgent):
                     }
                 )
             ],
+        )
+
+        super().__init__(
+            name=SubAgentEnum.FILE_MANAGER.value,
+            description=AGENT_DESCRIPTION_FILE_MANAGER,
+            agent=agent,
         )
 ```
 
@@ -345,8 +351,8 @@ class GreetAgent(RouteTaskAgent):
     def __init__(self):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
-            name="greet",
-            system_prompt="你是一个专业的招待助手，擅长和用户打招呼。",
+            name=SubAgentEnum.GREET.value,
+            system_prompt=AGENT_PROMPT_GREET,
             context_schema=AppAgentContext,
             state_schema=AppAgentState,
             middleware=[
@@ -359,6 +365,12 @@ class GreetAgent(RouteTaskAgent):
                     },
                 )
             ],
+        )
+
+        super().__init__(
+            name=SubAgentEnum.GREET.value,
+            description=AGENT_DESCRIPTION_GREET,
+            agent=agent,
         )
 ```
 

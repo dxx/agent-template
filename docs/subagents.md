@@ -216,7 +216,7 @@ class FileManagerAgent(SubAgent):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
             name=SubAgentEnum.FILE_MANAGER.value,
-            system_prompt=AGENT_FILE_MANAGER_PROMPT,
+            system_prompt=AGENT_PROMPT_FILE_MANAGER,
             context_schema=AppAgentContext,
             middleware=[
                 FilesystemMiddleware(isolate_by_user_id=True),
@@ -231,7 +231,7 @@ class FileManagerAgent(SubAgent):
 
         super().__init__(
             name=SubAgentEnum.FILE_MANAGER.value,
-            description="擅长对文件进行管理",
+            description=AGENT_DESCRIPTION_FILE_MANAGER,
             agent=agent,
         )
 ```
@@ -252,7 +252,7 @@ class ReseachAgent(SubAgent):
         agent = create_agent(
             model=create_chat_model(),
             name=SubAgentEnum.RESEARCH.value,
-            system_prompt=AGENT_RESEARCH_PROMPT,
+            system_prompt=AGENT_PROMPT_RESEARCH,
             context_schema=AppAgentContext,
             middleware=[
                 MCPClientMiddleware(
@@ -272,6 +272,12 @@ class ReseachAgent(SubAgent):
                 )
             ],
         )
+
+        super().__init__(
+            name=SubAgentEnum.RESEARCH.value,
+            description=AGENT_DESCRIPTION_RESEARCH,
+            agent=agent
+        )
 ```
 
 特点：
@@ -288,8 +294,8 @@ class GreetAgent(SubAgent):
     def __init__(self):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
-            name="greet",
-            system_prompt="你是一个专业的招待助手，擅长和用户打招呼。",
+            name=SubAgentEnum.GREET.value,
+            system_prompt=AGENT_PROMPT_GREET,
             context_schema=AppAgentContext,
             state_schema=AppAgentState,
             middleware=[
@@ -300,6 +306,12 @@ class GreetAgent(SubAgent):
                     },
                 )
             ],
+        )
+
+        super().__init__(
+            name=SubAgentEnum.GREET.value,
+            description=AGENT_DESCRIPTION_GREET,
+            agent=agent
         )
 ```
 
@@ -335,7 +347,7 @@ class TranslateAgent(SubAgent):
 
         super().__init__(
             name="translate",
-            description="擅长翻译和润色多语言内容",
+            description="擅长翻译和润色多语言内容。",
             agent=agent,
         )
 ```

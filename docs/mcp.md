@@ -59,7 +59,7 @@ class ReseachAgent(SubAgent):
         agent = create_agent(
             model=create_chat_model(),
             name=SubAgentEnum.RESEARCH.value,
-            system_prompt=AGENT_RESEARCH_PROMPT,
+            system_prompt=AGENT_PROMPT_RESEARCH,
             context_schema=AppAgentContext,
             middleware=[
                 # 安装 MCP 中间件
@@ -84,7 +84,7 @@ class ReseachAgent(SubAgent):
         
         super().__init__(
             name=SubAgentEnum.RESEARCH.value,
-            description="擅长从多个信息源收集和整理信息",
+            description=AGENT_DESCRIPTION_RESEARCH,
             agent=agent
         )
 ```

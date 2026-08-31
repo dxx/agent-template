@@ -100,7 +100,7 @@ class FileManagerAgent(SubAgent):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
             name=SubAgentEnum.FILE_MANAGER.value,
-            system_prompt=AGENT_FILE_MANAGER_PROMPT,
+            system_prompt=AGENT_PROMPT_FILE_MANAGER,
             context_schema=AppAgentContext,
             tools=[read_file, write_file],
             middleware=[HumanInTheLoopMiddleware[AgentState[Any], AppAgentContext, Any](
@@ -123,7 +123,7 @@ class FileManagerAgent(SubAgent):
         
         super().__init__(
             name=SubAgentEnum.FILE_MANAGER.value,
-            description="擅长对文件进行管理",
+            description=AGENT_DESCRIPTION_FILE_MANAGER,
             agent=agent
         )
 ```
