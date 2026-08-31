@@ -3,7 +3,7 @@ from langchain.agents import create_agent
 from agent.llm import create_chat_model
 from agent.subagents import SubAgentEnum
 from agent.middleware import SubAgent
-from agent.prompts import AGENT_REVIEW_PROMPT
+from agent.prompts import AGENT_PROMPT_REVIEW, AGENT_DESCRIPTION_REVIEW
 from agent.memory import AppAgentContext
 
 class ReviewAgent(SubAgent):
@@ -13,12 +13,12 @@ class ReviewAgent(SubAgent):
         agent = create_agent(
             model=create_chat_model(),
             name=SubAgentEnum.REVIEW.value,
-            system_prompt=AGENT_REVIEW_PROMPT,
+            system_prompt=AGENT_PROMPT_REVIEW,
             context_schema=AppAgentContext
         )
         
         super().__init__(
             name=SubAgentEnum.REVIEW.value,
-            description="擅长检查和改进内容质量，对事物进行评价",
+            description=AGENT_DESCRIPTION_REVIEW,
             agent=agent
         )

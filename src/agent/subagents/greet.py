@@ -3,6 +3,8 @@ from pathlib import Path
 
 from agent.llm import create_chat_model
 from agent.middleware import SubAgent, SkillsMiddleware
+from agent.subagents import SubAgentEnum
+from agent.prompts import AGENT_PROMPT_GREET, AGENT_DESCRIPTION_GREET
 from agent.skills import DirectorySkillLoader
 from agent.tools import greet
 from agent.memory import AppAgentContext, AppAgentState
@@ -18,8 +20,8 @@ class GreetAgent(SubAgent):
 
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
-            name="greet",
-            system_prompt="你是一个专业的招待助手，擅长和用户打招呼。",
+            name=SubAgentEnum.GREET.value,
+            system_prompt=AGENT_PROMPT_GREET,
             context_schema=AppAgentContext,
             # 子代理需要访问 state 时配置
             state_schema=AppAgentState,
@@ -36,7 +38,7 @@ class GreetAgent(SubAgent):
         )
 
         super().__init__(
-            name="greet",
-            description="擅长和用户打招呼",
+            name=SubAgentEnum.GREET.value,
+            description=AGENT_DESCRIPTION_GREET,
             agent=agent
         )

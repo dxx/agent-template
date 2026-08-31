@@ -6,9 +6,9 @@ from langchain.agents.middleware.types import AgentState
 
 from agent.hitl import approve
 from agent.llm import create_chat_model
-from agent.subagents import SubAgentEnum
 from agent.memory.context import AppAgentContext
-from agent.prompts import AGENT_FILE_MANAGER_PROMPT
+from agent.subagents import SubAgentEnum
+from agent.prompts import AGENT_PROMPT_FILE_MANAGER, AGENT_DESCRIPTION_FILE_MANAGER
 from agent.middleware import RouteTaskAgent
 from agent.tools import read_file, write_file
 
@@ -21,7 +21,7 @@ class FileManagerAgent(RouteTaskAgent):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
             name=SubAgentEnum.FILE_MANAGER.value,
-            system_prompt=AGENT_FILE_MANAGER_PROMPT,
+            system_prompt=AGENT_PROMPT_FILE_MANAGER,
             context_schema=AppAgentContext,
             tools=[read_file, write_file],
             middleware=[
@@ -42,6 +42,6 @@ class FileManagerAgent(RouteTaskAgent):
         
         super().__init__(
             name=SubAgentEnum.FILE_MANAGER.value,
-            description="擅长对文件进行管理",
+            description=AGENT_DESCRIPTION_FILE_MANAGER,
             agent=agent
         )

@@ -5,7 +5,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langchain.agents.middleware import summarization
 
 from agent.llm import create_chat_model
-from agent.prompts import AGENT_MAIN_PROMPT
+from agent.prompts import AGENT_PROMPT_MAIN
 from agent.middleware import (
     SubAgentMiddleware,
     SummarizationMiddleware,
@@ -76,7 +76,7 @@ def create_main_agent() -> CompiledStateGraph[AppAgentState, AppAgentContext, An
 
     return create_agent(
         name="main_agent",
-        system_prompt=AGENT_MAIN_PROMPT,
+        system_prompt=AGENT_PROMPT_MAIN,
         model=main_chat_model,
         context_schema=AppAgentContext,
         state_schema=AppAgentState,

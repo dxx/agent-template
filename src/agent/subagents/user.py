@@ -3,6 +3,8 @@ from langchain.agents import create_agent
 from agent.llm import create_chat_model
 from agent.middleware import SubAgent
 from agent.tools import user
+from agent.subagents import SubAgentEnum
+from agent.prompts import AGENT_PROMPT_USER, AGENT_DESCRIPTION_USER
 from agent.memory import AppAgentContext, AppAgentState
 
 class UserAgent(SubAgent):
@@ -11,8 +13,8 @@ class UserAgent(SubAgent):
         
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
-            name="user",
-            system_prompt="你是一个专业的维护用户信息的助手。",
+            name=SubAgentEnum.USER.value,
+            system_prompt=AGENT_PROMPT_USER,
             context_schema=AppAgentContext,
             # 子代理需要访问 state 时配置
             state_schema=AppAgentState,
@@ -20,7 +22,7 @@ class UserAgent(SubAgent):
         )
         
         super().__init__(
-            name="user",
-            description="用户信息管理",
+            name=SubAgentEnum.USER.value,
+            description=AGENT_DESCRIPTION_USER,
             agent=agent
         )

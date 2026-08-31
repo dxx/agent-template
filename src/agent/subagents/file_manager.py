@@ -5,7 +5,7 @@ from typing import Any
 from agent.llm import create_chat_model
 from agent.subagents import SubAgentEnum
 from agent.hitl import approve
-from agent.prompts import AGENT_FILE_MANAGER_PROMPT
+from agent.prompts import AGENT_PROMPT_FILE_MANAGER, AGENT_DESCRIPTION_FILE_MANAGER
 from agent.memory import AppAgentContext
 from agent.middleware import SubAgent, FilesystemMiddleware, HumanInTheLoopMiddleware
 
@@ -16,7 +16,7 @@ class FileManagerAgent(SubAgent):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
             name=SubAgentEnum.FILE_MANAGER.value,
-            system_prompt=AGENT_FILE_MANAGER_PROMPT,
+            system_prompt=AGENT_PROMPT_FILE_MANAGER,
             context_schema=AppAgentContext,
             middleware=[
                 # 支持文件系统工具。作为示例使用，本机部署时使用
@@ -42,6 +42,6 @@ class FileManagerAgent(SubAgent):
         
         super().__init__(
             name=SubAgentEnum.FILE_MANAGER.value,
-            description="擅长对文件进行管理",
+            description=AGENT_DESCRIPTION_FILE_MANAGER,
             agent=agent
         )
