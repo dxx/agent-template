@@ -6,13 +6,13 @@
 
 ```python
 from agent.middleware import HumanInTheLoopMiddleware
-from agent.hitl import approve
+from agent.hitl import default_allowed_decisions, default_description_callable
 
 middleware = HumanInTheLoopMiddleware[AgentState[Any], AppAgentContext, Any](
     interrupt_on={
         "tool_name": {
-            "allowed_decisions": approve.default_allowed_decisions,
-            "description": approve.default_descript_callable
+            "allowed_decisions": default_allowed_decisions,
+            "description": default_description_callable
         },
     }
 )
@@ -35,10 +35,10 @@ middleware = HumanInTheLoopMiddleware[AgentState[Any], AppAgentContext, Any](
 
 ## 审批描述函数
 
-`approve.py` 中提供了默认的审批描述函数 `default_descript_callable`，它使用 LLM 将工具调用信息转换为用户友好的描述：
+`approve.py` 中提供了默认的审批描述函数 `default_description_callable`，它使用 LLM 将工具调用信息转换为用户友好的描述：
 
 ```python
-def default_descript_callable(
+def default_description_callable(
     tool_call: ToolCall,
     state: AgentState[Any],
     runtime: Runtime[ContextT]
@@ -71,13 +71,13 @@ agent = create_agent(
             interrupt_on={
                 "write_file": {
                     # 可选的审批
-                    "allowed_decisions": approve.default_allowed_decisions,
+                    "allowed_decisions": default_allowed_decisions,
                     # 审批描述
-                    "description": approve.default_descript_callable
+                    "description": default_description_callable
                 },
                 "read_file": {
                     # 可选的审批
-                    "allowed_decisions": approve.default_allowed_decisions,
+                    "allowed_decisions": default_allowed_decisions,
                     # 审批描述
                     "description": "读取文件需要审批"
                 },
@@ -107,9 +107,9 @@ class FileManagerAgent(SubAgent):
                 interrupt_on={
                     "write_file": {
                         # 可选的审批
-                        "allowed_decisions": approve.default_allowed_decisions,
+                        "allowed_decisions": default_allowed_decisions,
                         # 审批描述
-                        "description": approve.default_descript_callable
+                        "description": default_description_callable
                     },
                     "read_file": {
                         # 可选的审批
