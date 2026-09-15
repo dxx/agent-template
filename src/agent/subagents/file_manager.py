@@ -4,7 +4,7 @@ from typing import Any
 
 from agent.llm import create_chat_model
 from agent.subagents import SubAgentEnum
-from agent.hitl import approve
+from agent.hitl import default_allowed_decisions, default_description_callable
 from agent.prompts import AGENT_PROMPT_FILE_MANAGER, AGENT_DESCRIPTION_FILE_MANAGER
 from agent.memory import AppAgentContext
 from agent.middleware import SubAgent, FilesystemMiddleware, HumanInTheLoopMiddleware
@@ -25,13 +25,13 @@ class FileManagerAgent(SubAgent):
                     interrupt_on={
                         "write_file": {
                             # 可选的审批
-                            "allowed_decisions": approve.default_allowed_decisions,
+                            "allowed_decisions": default_allowed_decisions,
                             # 审批描述
-                            "description": approve.default_descript_callable
+                            "description": default_description_callable
                         },
                         "read_file": {
                             # 可选的审批
-                            "allowed_decisions": approve.default_allowed_decisions,
+                            "allowed_decisions": default_allowed_decisions,
                             # 审批描述
                             "description": "读取文件需要审批"
                         },

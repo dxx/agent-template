@@ -4,7 +4,7 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import HumanInTheLoopMiddleware
 from langchain.agents.middleware.types import AgentState
 
-from agent.hitl import approve
+from agent.hitl import default_allowed_decisions, default_description_callable
 from agent.llm import create_chat_model
 from agent.memory.context import AppAgentContext
 from agent.subagents import SubAgentEnum
@@ -28,11 +28,11 @@ class FileManagerAgent(RouteTaskAgent):
                 HumanInTheLoopMiddleware[AgentState[Any], AppAgentContext, Any](
                     interrupt_on={
                         "write_file": {
-                            "allowed_decisions": approve.default_allowed_decisions,
-                            "description": approve.default_descript_callable,
+                            "allowed_decisions": default_allowed_decisions,
+                            "description": default_description_callable,
                         },
                         "read_file": {
-                            "allowed_decisions": approve.default_allowed_decisions,
+                            "allowed_decisions": default_allowed_decisions,
                             "description": "读取文件需要审批",
                         },
                     }

@@ -9,7 +9,6 @@ from langgraph.runtime import Runtime
 
 from agent.llm import create_chat_model
 
-decision_llm = create_chat_model(enable_thinking=False)
 
 sys_prompt = """
 你是一个专业的审核提示词助手，擅长优化提示词的内容。
@@ -27,7 +26,10 @@ user_prompt = """
 
 default_allowed_decisions: list[DecisionType] = ["approve", "reject"]
 
-def default_descript_callable(
+decision_llm = create_chat_model(enable_thinking=False)
+
+
+def default_description_callable(
     tool_call: ToolCall,
     state: AgentState[Any],
     runtime: Runtime[ContextT]
@@ -43,4 +45,16 @@ def default_descript_callable(
     )
 
     return ai_message.text
-    
+
+
+def action_description_callbale(name: str, args: dict) -> str:
+    """根据指定动作的审批描述内容处理"""
+    content = f"执行: {name}, 参数内容: {args}\n"
+    ai_message = decision_llm.invoke(
+        [
+            SystemMessage(content=sys_prompt),
+            HumanMessage(content=user_prompt.format(content=content))
+        ]
+    )
+
+    return ai_message.text
