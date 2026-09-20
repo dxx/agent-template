@@ -47,7 +47,7 @@ def default_description_callable(
     return ai_message.text
 
 
-def action_description_callbale(name: str, args: dict) -> str:
+def action_description_callable(name: str, args: dict) -> str:
     """根据指定动作的审批描述内容处理"""
     content = f"执行: {name}, 参数内容: {args}\n"
     ai_message = decision_llm.invoke(
