@@ -1,5 +1,43 @@
 # 更新日志
 
+## 2026-10-14
+
+### 变更
+
+- 为 `httpx.AsyncClient` 增加超时配置，禁用总超时并设置连接超时 5 秒、读取超时 10 秒。([f3485ae](https://github.com/dxx/agent-template/commit/f3485ae9053807128abd02e63112385848469d95))
+- 项目版本升级至 0.2.2。([ecee415](https://github.com/dxx/agent-template/commit/ecee4150034bf0c668cd517d413db3113c024dfb))
+
+## 2026-09-15
+
+### 新增
+
+- 新增 `hitl_interrupt` 函数，支持在工具内部直接触发与 `HumanInTheLoopMiddleware` 一致的人工审批中断，并返回 `ApproveDecision` 或 `RejectDecision`。([0969ead](https://github.com/dxx/agent-template/commit/0969eadfb3202b977ab9a5b468e4ec3b677f6fd0))
+- 新增 `action_description_callable`，根据动作名称和参数动态生成审批描述。([035b4de](https://github.com/dxx/agent-template/commit/035b4de4831ca2e144a83fc2d7250123f97efa38))
+
+### 变更
+
+- `approve.py` 更名为 `approval.py`，并在 `hitl` 包统一导出 `default_allowed_decisions`、`default_description_callable` 等审批相关符号，调用方改为从包直接导入。([035b4de](https://github.com/dxx/agent-template/commit/035b4de4831ca2e144a83fc2d7250123f97efa38))
+- 更新人工介入文档，统一审批配置的导入方式与函数命名。([4bba931](https://github.com/dxx/agent-template/commit/4bba93137da0f59bcb055fbcec33ad550b616125))
+
+## 2026-08-31
+
+### 变更
+
+- 修复 Windows 下 psycopg 异步连接池无法连接 PostgreSQL 的问题，改为通过 uvicorn 的 `loop` 参数指定 SelectorEventLoop，并将其定义为模块级函数以兼容 reload 模式。([12d65aa](https://github.com/dxx/agent-template/commit/12d65aa9a76b83c897988732e0de64ae4767542b))
+- 将各代理的提示词和描述抽取为 `AGENT_PROMPT_*`、`AGENT_DESCRIPTION_*` 变量，并新增 `GREET`、`USER` 子代理枚举。([fce5f3b](https://github.com/dxx/agent-template/commit/fce5f3b07f52acbefb6157c0d1292a45833cf26a))
+
+## 2026-08-16
+
+### 新增
+
+- 新增 `Dockerfile` 和 `.dockerignore`，基于 `uv` + Python 3.12 镜像构建，并补充 README 的 Docker 构建运行说明。([0994cf7](https://github.com/dxx/agent-template/commit/0994cf7fb63f99dddbc5fb5c76e5ae2f51024a70), [7a4cc79](https://github.com/dxx/agent-template/commit/7a4cc793677b459f4bdc533d04aec543af55dba9))
+
+## 2026-07-30
+
+### 依赖
+
+- 项目版本升级至 0.2.1。([94c9e1c](https://github.com/dxx/agent-template/commit/94c9e1c0c056f14b9353fec770063cccf748ab41))
+
 ## 2026-07-15
 
 ### 依赖
