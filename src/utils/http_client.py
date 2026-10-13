@@ -10,7 +10,7 @@ async def request(
     json: Any | None = None,
     **kwargs,
 ) -> httpx.Response:
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(None, connect=5.0, read=10.0)) as client:
         return await client.request(method, url, params=params, json=json, **kwargs)
 
 
