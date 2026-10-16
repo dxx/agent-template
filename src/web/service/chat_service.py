@@ -9,12 +9,13 @@ from agent.memory import AppAgentContext, AppAgentState
 from log import get_logger
 from web.schemas import (
     AppState,
-    ChatRequest,
-    ChatResponse,
-    ResponseMsgTypeEnum,
     Approve,
     ApproveItem,
-    Decision
+    ChatRequest,
+    ChatResponse,
+    Decision,
+    DecisionItem,
+    ResponseMsgTypeEnum,
 )
 from config import AppEnv, get_settings
 from web.session import format_thread_id
@@ -236,6 +237,7 @@ def _render_interrupt(interrupt: Interrupt) -> ChatResponse:
         approve=Approve(approve_id=interrupt_id, items=approve_items),
     )
 
+
 def _resume(decision: Decision | None) -> dict | None:
     if not decision:
         return None
@@ -244,8 +246,20 @@ def _resume(decision: Decision | None) -> dict | None:
         decision.decision_id: {
             "decisions": [
                 # 多个审批，按顺序对应。必须和要审批的数量一致
-                {"type": item.decision_type, "message": item.description }
+                _build_decision(item)
                 for item in decision.items
             ]
         }
     }
+
+
+def _build_decision(item: DecisionItem) -> dict:
+    if item.decision_type == "reject":
+        # reject 时补充明确说明，避免模型把用户拒绝当作工具执行结果后反复重试
+        message = (
+            f"用户已拒绝该操作：{item.description}。该工具调用未执行，"
+            "请不要重试该工具调用，直接向用户说明操作已取消即可。"
+        )
+    else:
+        message = item.description
+    return {"type": item.decision_type, "message": message}
