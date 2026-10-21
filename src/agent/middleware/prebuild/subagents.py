@@ -154,10 +154,9 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
 
         (message_text, state_update) = _return_message_with_state_update(result)
 
-        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, None)
-        if sub_agent_calls != None:
-            # 存在 SUB_AGENT_CALLS_KEY 时进行更新
-            state_update[SUB_AGENT_CALLS_KEY] = [*sub_agent_calls, agent_name]
+        # 仅当父 Agent 声明了该字段时才记录；该字段带 reducer，只写增量由框架合并
+        if runtime.state.get(SUB_AGENT_CALLS_KEY) is not None:
+            state_update[SUB_AGENT_CALLS_KEY] = [agent_name]
  
         return Command(update={
                 **state_update,
@@ -195,10 +194,9 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
 
         (message_text, state_update) = _return_message_with_state_update(result)
 
-        sub_agent_calls = runtime.state.get(SUB_AGENT_CALLS_KEY, None)
-        if sub_agent_calls != None:
-            # 存在 SUB_AGENT_CALLS_KEY 时进行更新
-            state_update[SUB_AGENT_CALLS_KEY] = [*sub_agent_calls, agent_name]
+        # 仅当父 Agent 声明了该字段时才记录；该字段带 reducer，只写增量由框架合并
+        if runtime.state.get(SUB_AGENT_CALLS_KEY) is not None:
+            state_update[SUB_AGENT_CALLS_KEY] = [agent_name]
  
         return Command(update={
                 **state_update,
