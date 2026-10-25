@@ -86,9 +86,9 @@ agent-template/
 │   │   │   ├── chat_service.py # 对话服务
 │   │   │   ├── chat_router_service.py # 路由 Agent 对话服务
 │   │   │   └── message_service.py # 消息服务
-│   │   └── session/            # 会话管理
-│   │       ├── __init__.py
-│   │       └── chat.py         # 对话会话管理
+│   ├── session/                # 会话管理
+│   │   ├── __init__.py
+│   │   └── chat.py             # 对话会话管理
 │   ├── log/                    # 日志模块
 │   │   └── log.py
 │   ├── utils/                  # 工具函数
