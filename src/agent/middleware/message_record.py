@@ -62,7 +62,9 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
         store = InMemoryStore()
         middleware = MessageRecordMiddleware(
             store=store,
-            namespace=("message_history",)
+            namespace=("message_history",),
+            keep_size=100,      # 清理后保留 100 条（偶数）
+            trigger_size=120,   # 攒到 120 条再清理
         )
 
         # 获取历史记录
@@ -73,13 +75,30 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
 
     注意：
         - runtime.context 必须包含 user_id 和 chat_id 属性
+        - runtime.context.message_record 为 False 时不记录消息
     """
 
     def __init__(
-        self, store: BaseStore, namespace: tuple[str, ...] = ("message_history",)
+        self,
+        store: BaseStore,
+        namespace: tuple[str, ...] = ("message_history",),
+        keep_size: int | None = 100,
+        trigger_size: int | None = None,
     ) -> None:
+        """初始化消息记录中间件。
+
+        Args:
+            store: 消息存储。
+            namespace: 存储命名空间。
+            keep_size: 清理后保留的消息条数。向下取偶数，保证按「用户提问 +
+                Agent 回答」成对保留。None 表示不裁切。
+            trigger_size: 触发清理的阈值。消息数量达到该值时清理。
+                None 时用 `keep_size` 作为阈值。
+        """
         self.store = store
         self.namespace = namespace
+        self.keep_size = keep_size
+        self.trigger_size = trigger_size
 
     @override
     def before_agent(
@@ -87,6 +106,8 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
         state: StateT,
         runtime: Runtime[Any],
     ) -> dict[str, Any] | None:
+        if not self._is_record_enabled(runtime):
+            return None
         user_input = self._get_user_input(state)
         if not user_input:
             return None
@@ -101,6 +122,8 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
         state: StateT,
         runtime: Runtime[Any],
     ) -> dict[str, Any] | None:
+        if not self._is_record_enabled(runtime):
+            return None
         user_input = self._get_user_input(state)
         if not user_input:
             return None
@@ -114,6 +137,8 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
         state: StateT,
         runtime: Runtime[Any],
     ) -> dict[str, Any] | None:
+        if not self._is_record_enabled(runtime):
+            return None
         agent_response = self._get_agent_response(state)
         if not agent_response:
             return None
@@ -128,12 +153,25 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
         state: StateT,
         runtime: Runtime[Any],
     ) -> dict[str, Any] | None:
+        if not self._is_record_enabled(runtime):
+            return None
         agent_response = self._get_agent_response(state)
         if not agent_response:
             return None
         key = self._get_key_from_runtime(runtime)
         await self._record_agent_message(key, agent_response)
         return None
+
+    def _is_record_enabled(self, runtime: Runtime[Any]) -> bool:
+        """是否需要记录消息。
+
+        上下文里的 `message_record` 为 False 时不记录，
+        用于路由 Agent 这类不应该写入聊天历史的内部调用。
+        """
+        context = getattr(runtime, "context", None)
+        if context is None:
+            return True
+        return bool(getattr(context, "message_record", True))
 
     def _get_key_from_runtime(self, runtime: Runtime[Any]) -> str:
         if not hasattr(runtime, "context") or not runtime.context:
@@ -237,14 +275,38 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
         )
 
     async def _record_user_message(self, key: str, content: str) -> None:
+        """记录用户提问。只追加，不清理。"""
         record = await self._get_chat_record(key)
         record["messages"].append(self._create_message_info(MessageType.USER, content))
         await self.store.aput(self.namespace, key, dict(record))
 
     async def _record_agent_message(self, key: str, content: str) -> None:
+        """记录 Agent 回复。追加后按阈值清理旧的记录。"""
         record = await self._get_chat_record(key)
-        record["messages"].append(self._create_message_info(MessageType.AGENT, content))
+        messages = record["messages"]
+        messages.append(self._create_message_info(MessageType.AGENT, content))
+        record["messages"] = self._trim_messages(messages)
         await self.store.aput(self.namespace, key, dict(record))
+
+    def _trim_messages(self, messages: list[MessageRecord]) -> list[MessageRecord]:
+        """达到触发阈值时，保留最近的偶数条记录。
+
+        - `keep_size` 为 None 时不裁切
+        - `trigger_size` 为 None 时用 `keep_size` 作为阈值
+        """
+        keep = self.keep_size
+        if keep is None or keep <= 0:
+            return messages
+
+        trigger = self.trigger_size if self.trigger_size is not None else keep
+        if trigger <= 0 or len(messages) < trigger:
+            return messages
+
+        # 保留的条数向下取偶数，保证按对保留
+        keep = keep - (keep % 2)
+        if keep <= 0:
+            return messages
+        return messages[-keep:]
 
     async def get_history(self, user_id: str, chat_id: str) -> list[MessageRecord]:
         """获取指定用户和聊天的消息历史
