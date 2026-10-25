@@ -1,9 +1,10 @@
 import uuid
 from collections.abc import AsyncIterator
-from langchain_core.messages import AIMessage, ToolMessage, AnyMessage, AIMessageChunk
+from langchain_core.messages import AIMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import RunnableConfig
-from langgraph.types import Command, Interrupt
+from langgraph.types import Command
 
+from agent.executor import Event, EventType, stream_events
 from agent.memory import AppAgentContext
 from agent.router import get_router_agent
 from log import get_logger
@@ -18,7 +19,7 @@ from web.schemas import (
     ResponseMsgTypeEnum,
 )
 from config import AppEnv, get_settings
-from web.session import format_thread_id
+from session import format_thread_id
 
 logger = get_logger(__name__)
 
@@ -38,9 +39,11 @@ async def router_chat_response(
         "messages": [{"role": "user", "content": content}],
     }
 
-    thread_id = format_thread_id(app_state.user_id, app_state.chat_id)
-    config = RunnableConfig(configurable={"thread_id": thread_id})
     context = AppAgentContext(user_id=app_state.user_id, chat_id=app_state.chat_id)
+
+    thread_id = format_thread_id(app_state.user_id, app_state.chat_id)
+
+    config = RunnableConfig(configurable={"thread_id": thread_id})
 
     resume = _resume(decision)
 
@@ -50,66 +53,57 @@ async def router_chat_response(
         inputs = Command(resume=resume)
 
     try:
-        async for chunk in router_agent.astream(
-            inputs,
+        async for event in stream_events(
+            agent=router_agent,
+            inputs=inputs,
             config=config,
             context=context,
-            stream_mode=["updates", "messages"],
-            version="v2",
+            # 收集 RouteAgentMiddleware 构建的节点
+            extra_nodes=["router", "join"],
             subgraphs=True,
         ):
-            if chunk["type"] == "messages":
-                token, metadata = chunk["data"]
-                lc_source = metadata.get("lc_source", None)
-                if lc_source == "summarization":
-                    # SummarizationMiddleware 汇总节点忽略
-                    continue
-                agent_name = metadata.get("lc_agent_name")
-                if agent_name != router_agent.get_name():
-                    # 只返回主 agent 对话的消息
-                    continue
-                if isinstance(token, AIMessageChunk):
-                    chat_response = _render_message_chunk(token)
-                    if chat_response:
-                        yield chat_response
-            elif chunk["type"] == "updates":
-                for node_name, state in chunk["data"].items():
-                    # create_agent 构建的 subgraph 中的 model 或 tools 节点
-                    if node_name in ("model", "tools"):
-                        # 最新的一条消息
-                        chat_response = _render_completed_message(state["messages"][-1])
-                        if chat_response:
-                            yield chat_response
-
-                    # 以下是 RouteAgentMiddleware 构建的节点
-                    if node_name == "router":
-                        routers = state.get("routers", [])
-                        if routers:
-                            yield ChatResponse(
-                                msg_id=str(uuid.uuid4()),
-                                msg_type=ResponseMsgTypeEnum.PROCESS,
-                                content="路由到 " + "、".join(router.name for router in routers),
-                            )
-                        else:
-                            yield ChatResponse(
-                                msg_id=str(uuid.uuid4()),
-                                msg_type=ResponseMsgTypeEnum.PROCESS,
-                                content="没有找到路由",
-                            )
-                    if node_name == "join":
-                        final_result = state.get("final_result", "")
-                        if final_result:
-                            yield ChatResponse(
-                                msg_id=str(uuid.uuid4()),
-                                msg_type=ResponseMsgTypeEnum.PROCESS,
-                                content=f"处理结果: {final_result}",
-                            )
-                    # RouteAgentMiddleware 构建的节点结束
-
-                    if node_name == "__interrupt__":
-                        # 与 chat_service 保持一致：只返回根 graph 触发的中断，避免重复提示。
-                        if str(chunk["ns"]) == "()":
-                            yield _render_interrupt(state[0])
+            # 消息类型
+            if event.event_type == EventType.MESSAGE:
+                # LLM Token
+                chat_response = _render_message_chunk(event)
+                if chat_response:
+                    yield chat_response
+            elif event.event_type in (EventType.MODEL, EventType.TOOLS):
+                # create_agent 构建的 subgraph 中的 model 或 tools 节点
+                # 最新的一条消息
+                chat_response = _render_completed_message(event)
+                if chat_response:
+                    yield chat_response
+            elif event.event_type == EventType.UPDATE:
+                # 以下是 RouteAgentMiddleware 构建的节点
+                if event.node == "router":
+                    routers = event.state.get("routers", [])
+                    if routers:
+                        yield ChatResponse(
+                            msg_id=str(uuid.uuid4()),
+                            msg_type=ResponseMsgTypeEnum.PROCESS,
+                            content="路由到 " + "、".join(router.name for router in routers),
+                        )
+                    else:
+                        yield ChatResponse(
+                            msg_id=str(uuid.uuid4()),
+                            msg_type=ResponseMsgTypeEnum.PROCESS,
+                            content="没有找到路由",
+                        )
+                if event.node == "join":
+                    final_result = event.state.get("final_result", "")
+                    if final_result:
+                        yield ChatResponse(
+                            msg_id=str(uuid.uuid4()),
+                            msg_type=ResponseMsgTypeEnum.PROCESS,
+                            content=f"处理结果: {final_result}",
+                        )
+                # RouteAgentMiddleware 构建的节点结束
+            elif event.event_type == EventType.INTERRUPT:
+                # 只返回根 graph 触发的中断，避免重复提示。
+                chat_response = _render_interrupt(event)
+                if chat_response:
+                    yield chat_response
     except Exception as e:
         logger.error("Router chat error, e=%s", str(e), exc_info=e)
         yield ChatResponse(
@@ -119,17 +113,21 @@ async def router_chat_response(
         )
 
 
-def _render_message_chunk(token: AIMessageChunk) -> ChatResponse | None:
+def _render_message_chunk(event: Event) -> ChatResponse | None:
     """渲染消息块。"""
-    if token.text:
+    token = event.message
+
+    if isinstance(token, AIMessageChunk) and token.text:
         return ChatResponse(
-            msg_id=token.id if token.id else str(uuid.uuid4()),
+            msg_id=event.msg_id,
             content=token.text,
         )
     return None
 
-def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
+def _render_completed_message(event: Event) -> ChatResponse | None:
     """渲染完整消息"""
+
+    message = event.message
 
     settings = get_settings()
     if settings.app_env == AppEnv.DEV.value:
@@ -144,21 +142,26 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
     if isinstance(message, AIMessage) and message.tool_calls:
         tool_names = [tool_call["name"] for tool_call in message.tool_calls]
         return ChatResponse(
-            msg_id=message.id if message.id else str(uuid.uuid4()),
+            msg_id=event.msg_id,
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content="调用 " + "、".join(tool_names),
         )
      # 工具消息
     if isinstance(message, ToolMessage):
         return ChatResponse(
-            msg_id=message.id if message.id else str(uuid.uuid4()),
+            msg_id=event.msg_id,
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content=f"{message.name} 执行{"成功" if message.status == "success" else "失败"}",
         )
     return None
 
-def _render_interrupt(interrupt: Interrupt) -> ChatResponse:
+def _render_interrupt(event: Event) -> ChatResponse | None:
     """渲染中断信息。"""
+    interrupt = event.interrupt
+
+    if not interrupt:
+        return None
+
     interrupt_id = interrupt.id
     interrupt_value = interrupt.value
     action_requests = interrupt_value["action_requests"]

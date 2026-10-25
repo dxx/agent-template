@@ -4,7 +4,7 @@ from agent.subagents import (
     get_message_record_middleware,
 )
 from agent.middleware.message_record import MessageRecord
-from web.session import format_thread_id, generate_chat_id
+from session import format_thread_id, generate_chat_id
 from web.schemas import Message, MessageResponse
 from exception import SystemException
 

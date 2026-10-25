@@ -1,9 +1,10 @@
 import uuid
 from collections.abc import AsyncIterator
-from langchain_core.messages import AIMessage, ToolMessage, AnyMessage, AIMessageChunk
-from langgraph.types import Interrupt, Command
+from langchain_core.messages import AIMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import RunnableConfig
+from langgraph.types import Command
 
+from agent.executor import Event, EventType, stream_events
 from agent.subagents import get_main_agent
 from agent.memory import AppAgentContext, AppAgentState
 from log import get_logger
@@ -18,7 +19,7 @@ from web.schemas import (
     ResponseMsgTypeEnum,
 )
 from config import AppEnv, get_settings
-from web.session import format_thread_id
+from session import format_thread_id
 
 logger = get_logger(__name__)
 
@@ -41,11 +42,11 @@ async def chat_response(
         **state
     }
 
+    context = AppAgentContext(user_id=app_state.user_id, chat_id=app_state.chat_id)
+
     thread_id = format_thread_id(app_state.user_id, app_state.chat_id)
 
     config = RunnableConfig(configurable={"thread_id": thread_id})
-
-    context = AppAgentContext(user_id=app_state.user_id, chat_id=app_state.chat_id)
 
     resume = _resume(decision)
 
@@ -57,46 +58,34 @@ async def chat_response(
         )
 
     try:
-        async for chunk in main_agent.astream(
-            inputs,
+        # SummarizationMiddleware 汇总节点忽略
+        # 只返回主 agent 对话的消息
+        async for event in stream_events(
+            agent=main_agent,
+            inputs=inputs,
             config=config,
             context=context,
-            stream_mode=[
-                "updates", "messages"
-            ],
-            version="v2",
             # 开启子 graph 流事件
             subgraphs=True
         ):
             # 消息类型
-            if chunk["type"] == "messages":
+            if event.event_type == EventType.MESSAGE:
                 # LLM Token
-                token, metadata = chunk["data"]
-                lc_source = metadata.get("lc_source", None)
-                if lc_source == "summarization":
-                    # SummarizationMiddleware 汇总节点忽略
-                    continue
-                agent_name = metadata.get("lc_agent_name")
-                if agent_name != main_agent.get_name():
-                    # 只返回主 agent 对话的消息
-                    continue
-                if isinstance(token, AIMessageChunk):
-                    chat_response = _render_message_chunk(token)
-                    if chat_response:
-                        yield chat_response
-            elif chunk["type"] == "updates":
+                chat_response = _render_message_chunk(event)
+                if chat_response:
+                    yield chat_response
+            elif event.event_type in (EventType.MODEL, EventType.TOOLS):
                 # graph 中节点数据
-                for source, update in chunk["data"].items():
-                    # model 或 tools 节点
-                    if source in ("model", "tools"):
-                        # 最新的一条消息
-                        chat_response = _render_completed_message(update["messages"][-1])
-                        if chat_response:
-                            yield chat_response
-                    if source == "__interrupt__":
-                        # 只返回主 agent 触发的中断，开启子 graph 流事件子 agent 也会触发
-                        if str(chunk["ns"]) == "()":
-                            yield _render_interrupt(update[0])
+                # model 或 tools 节点
+                # 最新的一条消息
+                chat_response = _render_completed_message(event)
+                if chat_response:
+                    yield chat_response
+            elif event.event_type == EventType.INTERRUPT:
+                # 只返回主 agent 触发的中断，开启子 graph 流事件子 agent 也会触发
+                chat_response = _render_interrupt(event)
+                if chat_response:
+                    yield chat_response
     except Exception as e:
         logger.error("Chat error, e=%s", str(e), exc_info=e)
         yield ChatResponse(
@@ -105,7 +94,7 @@ async def chat_response(
             content=f"{str(e)}",
         )
 
-def _render_message_chunk(token: AIMessageChunk) -> ChatResponse | None:
+def _render_message_chunk(event: Event) -> ChatResponse | None:
     """渲染消息块
 
     token 内容示例:
@@ -136,21 +125,23 @@ def _render_message_chunk(token: AIMessageChunk) -> ChatResponse | None:
     """
 
     # 分块文本信息
-    if token.text:
+    token = event.message
+
+    if isinstance(token, AIMessageChunk) and token.text:
         return ChatResponse(
-            msg_id= token.id if token.id else str(uuid.uuid4()),
+            msg_id= event.msg_id,
             content=token.text,
         )
     return None
 
-def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
+def _render_completed_message(event: Event) -> ChatResponse | None:
     """渲染完整消息
 
     message 内容示例:
 
     content = '今天吃什么这个问题，让我来帮你做个决定吧！🍽️\n\n给你几个选择：\n\n1. **火锅** 🍲 - 热气腾腾，适合和朋友
     一起分享\n2. **日料** 🍣 - 新鲜美味，清淡健康\n3. **川菜** 🌶️ - 麻辣鲜香，下饭神器\n4. **披萨意面** 🍕 - 西式
-    风味，经典舒适\n5. **沙拉轻食** 🥗 - 清新爽口，无负担\n\n或者如果你告诉我：\n- 你现在的心情（想吃点辣的？清淡的？）\n- 你
+    风味，经典舒适\n5. **沙拉轻食** 🥗 - 清爽爽口，无负担\n\n或者如果你告诉我：\n- 你现在的心情（想吃点辣的？清淡的？）\n- 你
     在哪个地区（我可以推荐更具体的）\n- 想点外卖还是自己做饭？\n\n我可以帮你做出更精准的推荐！😋'
     additional_kwargs = {}
     response_metadata = {
@@ -162,6 +153,8 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
     id = 'lc_run--019d60a1-1a5a-7211-9a6e-3643db7c4d12'
     tool_calls = [] invalid_tool_calls = []
     """
+
+    message = event.message
 
     settings = get_settings()
     if settings.app_env == AppEnv.DEV.value:
@@ -176,21 +169,21 @@ def _render_completed_message(message: AnyMessage) -> ChatResponse | None:
     if isinstance(message, AIMessage) and message.tool_calls:
         tool_names = [tool_call["name"] for tool_call in message.tool_calls]
         return ChatResponse(
-            msg_id=message.id if message.id else str(uuid.uuid4()),
+            msg_id=event.msg_id,
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content="调用 " + "、".join(tool_names),
         )
      # 工具消息
     if isinstance(message, ToolMessage):
         return ChatResponse(
-            msg_id=message.id if message.id else str(uuid.uuid4()),
+            msg_id=event.msg_id,
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content=f"{message.name} 执行{"成功" if message.status == "success" else "失败"}",
         )
     return None
 
 
-def _render_interrupt(interrupt: Interrupt) -> ChatResponse:
+def _render_interrupt(event: Event) -> ChatResponse | None:
     """渲染中断信息
 
     interrupt 内容示例:
@@ -211,6 +204,11 @@ def _render_interrupt(interrupt: Interrupt) -> ChatResponse:
     },
     id = 'f96ef5b2139198600bd7c58db3248380'
     """
+
+    interrupt = event.interrupt
+
+    if not interrupt:
+        return None
 
     interrupt_id = interrupt.id
     interrupt_value = interrupt.value
