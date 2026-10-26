@@ -27,7 +27,7 @@ class ResearchAgent(RouteTaskAgent):
                             "command": "uvx",
                             "args": [
                                 "--from",
-                                "arxiv-mcp-server==0.4.12",
+                                "arxiv-mcp-server==0.8.2",
                                 "arxiv-mcp-server",
                                 "--storage-path",
                                 f"{Path.cwd()}/arxiv/paper",
