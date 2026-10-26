@@ -34,7 +34,9 @@ _message_record_middleware: MessageRecordMiddleware | None = None
 def get_message_record_middleware():
     global _message_record_middleware
     if _message_record_middleware is None:
-        _message_record_middleware = MessageRecordMiddleware(get_store())
+        _message_record_middleware = MessageRecordMiddleware(
+            store=get_store(), trigger_size=120
+        )
     return _message_record_middleware
 
 
