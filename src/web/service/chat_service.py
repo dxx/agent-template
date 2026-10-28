@@ -184,7 +184,9 @@ def _render_completed_message(event: Event) -> ChatResponse | None:
 
 
 def _render_interrupt(event: Event) -> ChatResponse | None:
-    """渲染中断信息
+    """渲染中断信息。
+
+    同一 superstep 可能产生多个中断，这里只取第一个。
 
     interrupt 内容示例:
 
@@ -205,10 +207,12 @@ def _render_interrupt(event: Event) -> ChatResponse | None:
     id = 'f96ef5b2139198600bd7c58db3248380'
     """
 
-    interrupt = event.interrupt
+    interrupts = event.interrupts
 
-    if not interrupt:
+    if not interrupts:
         return None
+
+    interrupt = interrupts[0]
 
     interrupt_id = interrupt.id
     interrupt_value = interrupt.value

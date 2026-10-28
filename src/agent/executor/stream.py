@@ -177,7 +177,8 @@ def _parse_updates(data: Any, ns: tuple[str, ...], extra_nodes: set[str] | None 
                 Event(
                     event_type=EventType.INTERRUPT,
                     msg_id=str(uuid.uuid4()),
-                    interrupt=update[0],
+                    # 同一 superstep 可能产生多个中断
+                    interrupts=list(update),
                 )
             )
         elif extra_nodes and node in extra_nodes:

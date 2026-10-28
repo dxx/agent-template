@@ -66,10 +66,11 @@ class Event:
     - tools 事件：`ToolMessage`，工具节点执行的消息
     """
 
-    interrupt: Interrupt | None = None
+    interrupts: list[Interrupt] | None = None
     """中断信息。interrupt 事件使用。
 
-    value 中包含 action_requests、review_configs，
+    同一 superstep 可能产生多个中断（如并行子图同时中断），因此这里是列表。
+    每个中断的 value 中包含 action_requests、review_configs，
     action_requests 中带有工具的调用参数
     """
 
