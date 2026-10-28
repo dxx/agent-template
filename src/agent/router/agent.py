@@ -11,6 +11,7 @@ from agent.memory import (
     get_checkpointer,
     get_store,
 )
+from agent.memory.namespace import ns
 from agent.middleware import (
     RouteAgentMiddleware,
     SummarizationMiddleware,
@@ -35,7 +36,9 @@ def get_message_record_middleware():
     global _message_record_middleware
     if _message_record_middleware is None:
         _message_record_middleware = MessageRecordMiddleware(
-            store=get_store(), trigger_size=120
+            store=get_store(),
+            namespace=ns("message_history"),
+            trigger_size=120,
         )
     return _message_record_middleware
 

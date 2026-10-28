@@ -3,6 +3,7 @@ from langchain.tools import ToolRuntime
 from pydantic import BaseModel, Field
 
 from agent.memory import AppAgentContext, AppAgentState
+from agent.memory.namespace import ns
 
 class UserInfo(BaseModel):
     """用户信息"""
@@ -11,7 +12,7 @@ class UserInfo(BaseModel):
     hobby: list[str] = Field(default=[], description="爱好")
 
 # 命名空间
-namespace = ("user",)
+namespace = ns("user")
 
 @tool
 async def save_user_info(user_info: UserInfo, runtime: ToolRuntime[AppAgentContext, AppAgentState]) -> str:

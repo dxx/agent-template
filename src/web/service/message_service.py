@@ -3,13 +3,14 @@ from agent.subagents import (
     get_store,
     get_message_record_middleware,
 )
+from agent.memory.namespace import ns
 from agent.middleware.message_record import MessageRecord
 from session import format_thread_id, generate_chat_id
 from web.schemas import Message, MessageResponse
 from exception import SystemException
 
 
-_NAMESPACE_CHAT_ID = ("user_chat_id",)
+_NAMESPACE_CHAT_ID = ns("user_chat_id")
 
 _MAX_CHAT_COUNT = 10
 
