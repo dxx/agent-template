@@ -76,8 +76,9 @@ async def router_chat_response(
                     yield chat_response
             elif event.event_type == EventType.UPDATE:
                 # 以下是 RouteAgentMiddleware 构建的节点
+                state = event.state or {}
                 if event.node == "router":
-                    routers = event.state.get("routers", [])
+                    routers = state.get("routers", [])
                     if routers:
                         yield ChatResponse(
                             msg_id=str(uuid.uuid4()),
@@ -91,7 +92,7 @@ async def router_chat_response(
                             content="没有找到路由",
                         )
                 if event.node == "join":
-                    final_result = event.state.get("final_result", "")
+                    final_result = state.get("final_result", "")
                     if final_result:
                         yield ChatResponse(
                             msg_id=str(uuid.uuid4()),
@@ -119,7 +120,7 @@ def _render_message_chunk(event: Event) -> ChatResponse | None:
 
     if isinstance(token, AIMessageChunk) and token.text:
         return ChatResponse(
-            msg_id=event.msg_id,
+            msg_id=event.msg_id or str(uuid.uuid4()),
             content=token.text,
         )
     return None
@@ -142,14 +143,14 @@ def _render_completed_message(event: Event) -> ChatResponse | None:
     if isinstance(message, AIMessage) and message.tool_calls:
         tool_names = [tool_call["name"] for tool_call in message.tool_calls]
         return ChatResponse(
-            msg_id=event.msg_id,
+            msg_id=event.msg_id or str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content="调用 " + "、".join(tool_names),
         )
      # 工具消息
     if isinstance(message, ToolMessage):
         return ChatResponse(
-            msg_id=event.msg_id,
+            msg_id=event.msg_id or str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content=f"{message.name} 执行{"成功" if message.status == "success" else "失败"}",
         )

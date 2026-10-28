@@ -129,7 +129,7 @@ def _render_message_chunk(event: Event) -> ChatResponse | None:
 
     if isinstance(token, AIMessageChunk) and token.text:
         return ChatResponse(
-            msg_id= event.msg_id,
+            msg_id= event.msg_id or str(uuid.uuid4()),
             content=token.text,
         )
     return None
@@ -169,14 +169,14 @@ def _render_completed_message(event: Event) -> ChatResponse | None:
     if isinstance(message, AIMessage) and message.tool_calls:
         tool_names = [tool_call["name"] for tool_call in message.tool_calls]
         return ChatResponse(
-            msg_id=event.msg_id,
+            msg_id=event.msg_id or str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content="调用 " + "、".join(tool_names),
         )
      # 工具消息
     if isinstance(message, ToolMessage):
         return ChatResponse(
-            msg_id=event.msg_id,
+            msg_id=event.msg_id or str(uuid.uuid4()),
             msg_type=ResponseMsgTypeEnum.PROCESS,
             content=f"{message.name} 执行{"成功" if message.status == "success" else "失败"}",
         )

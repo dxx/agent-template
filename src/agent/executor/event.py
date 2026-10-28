@@ -20,7 +20,7 @@
 需要通过 `stream_events` 的 `extra_nodes` 参数指定。
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
@@ -52,10 +52,10 @@ class Event:
     event_type: EventType
     """事件类型"""
 
-    msg_id: str = ""
+    msg_id: str | None = None
     """消息 id。同一条消息的多个事件共用一个 id"""
 
-    chunk: str = ""
+    chunk: str | None = None
     """增量文本内容。message 事件使用"""
 
     message: AnyMessage | None = None
@@ -74,8 +74,8 @@ class Event:
     action_requests 中带有工具的调用参数
     """
 
-    node: str = ""
+    node: str | None = None
     """产生事件的 graph 节点名。如 router、join 等，注意 model 和 tools 不包含在里面"""
 
-    state: dict[str, Any] = field(default_factory=dict)
+    state: dict[str, Any] | None = None
     """状态数据。update 事件使用"""
