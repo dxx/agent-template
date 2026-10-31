@@ -3,6 +3,8 @@ from enum import StrEnum
 from typing import Any, Literal, TypedDict
 from pydantic import BaseModel, Field, model_validator
 
+from agent.memory.router_state import AgentTask
+
 
 # 决策类型：approve=通过 reject=拒绝
 DecisionType = Literal["approve", "reject"]
@@ -117,6 +119,15 @@ class ChatRequest(BaseModel):
             raise ValueError("审批决策内容不能为空")
 
         return self
+
+
+class RouterChatRequest(ChatRequest):
+    """路由对话请求"""
+
+    agents: list[AgentTask] | None = Field(
+        default=None,
+        description="指定调用的代理及任务内容。指定后跳过路由模型的路由判断",
+    )
 
 
 class ChatResponse(BaseModel):

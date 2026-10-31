@@ -6,13 +6,14 @@ from langgraph.types import Command
 
 from agent.executor import Event, EventType, stream_events
 from agent.memory import AppAgentContext
-from agent.router import get_router_agent
+from agent.memory.router_state import AgentTask
+from agent.router import get_router_agent, task_agent_holder
 from log import get_logger
 from web.schemas import (
     AppState,
     Approve,
     ApproveItem,
-    ChatRequest,
+    RouterChatRequest,
     ChatResponse,
     Decision,
     DecisionItem,
@@ -26,7 +27,7 @@ logger = get_logger(__name__)
 
 async def router_chat_response(
     app_state: AppState,
-    request: ChatRequest,
+    request: RouterChatRequest,
 ) -> AsyncIterator[ChatResponse]:
     """路由 Agent 流式对话响应。"""
 
@@ -39,7 +40,23 @@ async def router_chat_response(
         "messages": [{"role": "user", "content": content}],
     }
 
-    context = AppAgentContext(user_id=app_state.user_id, chat_id=app_state.chat_id)
+    # 解析指定的代理。名称未注册时返回错误
+    agents, error = _parse_agents(request.agents)
+
+    if error:
+        logger.warning("Invalid agents, error=%s", error)
+        yield ChatResponse(
+            msg_id=str(uuid.uuid4()),
+            msg_type=ResponseMsgTypeEnum.ERROR,
+            content=error,
+        )
+        return
+
+    context = AppAgentContext(
+        user_id=app_state.user_id,
+        chat_id=app_state.chat_id,
+        agents=agents,
+    )
 
     thread_id = format_thread_id(app_state.user_id, app_state.chat_id)
 
@@ -112,6 +129,41 @@ async def router_chat_response(
             msg_type=ResponseMsgTypeEnum.ERROR,
             content=f"{str(e)}",
         )
+
+
+def _parse_agents(
+    agents: list[AgentTask] | None,
+) -> tuple[list[AgentTask] | None, str | None]:
+    """解析指定的代理。
+
+    返回 (代理列表, 错误信息)。名称或任务内容为空的静默忽略，
+    名称未注册的返回错误信息。
+    """
+
+    if not agents:
+        return None, None
+
+    names = task_agent_holder.get_agent_names()
+
+    parsed = []
+    for agent in agents:
+        name = agent["name"].strip()
+        query = agent["query"].strip()
+
+        if not name or not query:
+            logger.warning(
+                "Ignore invalid agent, name=%s, query=%s",
+                agent["name"],
+                agent["query"],
+            )
+            continue
+
+        if name not in names:
+            return None, f"未知的代理: {name}"
+
+        parsed.append({"name": name, "query": query})
+
+    return parsed or None, None
 
 
 def _render_message_chunk(event: Event) -> ChatResponse | None:

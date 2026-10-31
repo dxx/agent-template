@@ -7,7 +7,13 @@ from web.schemas import AppState, ApiResult, CODE_UNAUTHORIZED
 
 logger = get_logger(__name__)
 
-_PUBLIC_PATHS = ["/docs", "/openapi.json", "/health", "/test/chat/stream"]
+_PUBLIC_PATHS = [
+    "/docs",
+    "/openapi.json",
+    "/health",
+    "/test/chat/stream",
+    "/test/router/chat/stream",
+]
 
 
 class AuthMiddleware(BaseHTTPMiddleware):

@@ -14,6 +14,7 @@ from agent.memory import (
 from agent.memory.namespace import ns
 from agent.middleware import (
     RouteAgentMiddleware,
+    RouteTaskAgent,
     SummarizationMiddleware,
     SystemTimeMiddleware,
     ToolCallsPatchMiddleware,
@@ -22,6 +23,7 @@ from agent.middleware import (
 )
 from agent.router.file_manager import FileManagerAgent
 from agent.router.greet import GreetAgent
+from agent.router.hold import task_agent_holder
 from agent.router.research import ResearchAgent
 from agent.router.review import ReviewAgent
 from agent.router.writing import WritingAgent
@@ -30,6 +32,17 @@ _router_agent = None
 _router_agent_lock = asyncio.Lock()
 
 _message_record_middleware: MessageRecordMiddleware | None = None
+
+_route_task_agents = [
+    WritingAgent(),
+    ResearchAgent(),
+    ReviewAgent(),
+    GreetAgent(),
+    FileManagerAgent(),
+]
+
+for _agent in _route_task_agents:
+    task_agent_holder.register(_agent)
 
 
 def get_message_record_middleware():
@@ -67,13 +80,7 @@ def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any
     
     message_record_middleware = get_message_record_middleware()
 
-    agents = [
-        WritingAgent(),
-        ResearchAgent(),
-        ReviewAgent(),
-        GreetAgent(),
-        FileManagerAgent(),
-    ]
+    agents = _route_task_agents
 
     route_agent_middleware = RouteAgentMiddleware(
         graph_name="router_graph",

@@ -2,21 +2,6 @@
 
 提供一个 `route` 工具，由主 Agent 主动调用后，再通过内部
 StateGraph 路由到多个任务 Agent 执行。
-
-`RouteAgentMiddleware` 的内部流程：
-
-1. 向主 Agent 注册 `route` 工具
-2. 工具接收主 Agent 整理的 `query` 作为待处理任务内容
-3. 内部 `_RouteGraphAgent` 使用 `StateGraph` 执行 `router → call_agent → join`
-4. `router` 节点用 LLM 生成结构化 `RouterResult`
-5. `call_agent` 节点根据路由结果调用一个或多个 `RouteTaskAgent`
-6. `join` 节点返回单个 `final_result`
-
-路由任务代理通过 `RouteTaskAgent` 包装普通 LangChain/LangGraph agent，必须提供：
-
-- `name`: 路由模型可选择的代理名称
-- `description`: 路由模型判断何时使用该代理的描述
-- `agent`: 实际执行任务的 Runnable
 """
 
 from collections.abc import Awaitable, Callable, Sequence
@@ -42,9 +27,10 @@ from langgraph.types import Send
 
 from agent.memory.router_state import (
     AgentOutput,
-    AgentRouter,
+    AgentTask,
     RouterResult,
     RouterState,
+    RouteTask,
 )
 from agent.middleware.prebuild.task_agent import TaskAgent
 
@@ -60,9 +46,10 @@ _ROUTER_TOOL_DESCRIPTION = """
 路由代理会自动选择合适的任务代理执行，并把结果合并返回。
 
 ## 说明
-1. `query` 参数必须是完整、自包含的任务描述，包含执行任务所需的全部上下文
-2. 路由代理不持有对话历史，无法获知你在前序对话中补充的信息
-3. 返回结果是文本消息，对用户不可见，你需要总结后回复用户
+1. `query` 必须是完整、自包含的任务描述，包含执行任务所需的全部上下文
+2. 用户已指定代理时，`query` 作为共享背景，会与用户指定的任务合并后发给代理
+3. 路由代理不持有对话历史，无法获知你在前序对话中补充的信息
+4. 返回结果是文本消息，对用户不可见，你需要总结后回复用户
 """
 
 _ROUTER_SYSTEM_PROMPT = """
@@ -98,6 +85,18 @@ class RouteTaskAgent(TaskAgent):
 
 
 class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
+    """`RouteAgentMiddleware` 的内部流程：
+
+    1. 向主 Agent 注册 `route` 工具
+    2. 工具接收主 Agent 整理的 `query` 作为待处理任务内容
+    3. 内部 `_RouteGraphAgent` 使用 `StateGraph` 执行 `router → call_agent → join`
+    4. `router` 节点用 LLM 生成结构化 `RouterResult`
+    5. `call_agent` 节点根据路由结果调用一个或多个 `RouteTaskAgent`
+    6. `join` 节点返回单个 `final_result`
+
+    代理通过 runtime.context.agents 来指定，指定了代理时，`router` 节点跳过路由模型的路由判断，直接使用指定的代理；
+    主 Agent 的 `query` 作为共享背景，与指定的每个代理的任务内容合并后下发给代理。
+    """
     def __init__(
         self,
         *,
@@ -220,7 +219,11 @@ class _RouteGraphAgent(TaskAgent):
 
         return graph.compile(name=name)
 
-    def _route(self, state: RouterState) -> dict[str, list[AgentRouter]]:
+    def _route(self, state: RouterState) -> dict[str, list[RouteTask]]:
+        if target_agents := state.get("target_agents"):
+            # 已指定代理，跳过路由模型的路由判断
+            return {"routers": self._build_target_routers(target_agents, state["query"])}
+
         if not state["query"]:
             return {"routers": []}
 
@@ -232,7 +235,11 @@ class _RouteGraphAgent(TaskAgent):
         )
         return {"routers": self._filter_routers(result.routers)}
 
-    async def _aroute(self, state: RouterState) -> dict[str, list[AgentRouter]]:
+    async def _aroute(self, state: RouterState) -> dict[str, list[RouteTask]]:
+        if target_agents := state.get("target_agents"):
+            # 已指定代理，跳过路由模型的路由判断
+            return {"routers": self._build_target_routers(target_agents, state["query"])}
+
         if not state["query"]:
             return {"routers": []}
 
@@ -356,10 +363,29 @@ class _RouteGraphAgent(TaskAgent):
             return parsed
         return RouterResult.model_validate(parsed)
 
-    def _filter_routers(self, routers: list[AgentRouter]) -> list[AgentRouter]:
+    def _filter_routers(self, routers: list[RouteTask]) -> list[RouteTask]:
         return [router for router in routers if router.name in self._agents]
 
-    def _build_agent_input(self, state: RouterState, router: AgentRouter) -> dict[str, Any]:
+    def _build_target_routers(
+        self,
+        target_agents: list[AgentTask],
+        background: str,
+    ) -> list[RouteTask]:
+        """把指定的任务代理转换为路由结果。
+
+        指定的 query 是分工指令，主 Agent 的 query 是共享背景，
+        两者合并后作为代理的任务内容。
+        """
+
+        return [
+            RouteTask(
+                name=target["name"],
+                query=_merge_task_context(background, target["query"]),
+            )
+            for target in target_agents
+        ]
+
+    def _build_agent_input(self, state: RouterState, router: RouteTask) -> dict[str, Any]:
         return {
             **state,
             "messages": [{"role": "user", "content": router.query}],
@@ -372,7 +398,7 @@ class _RouteGraphAgent(TaskAgent):
         }
 
     @staticmethod
-    def _get_current_router(state: RouterState) -> AgentRouter:
+    def _get_current_router(state: RouterState) -> RouteTask:
         router = state.get("router")
         if router is None:
             raise ValueError("缺少当前代理路由信息")
@@ -434,7 +460,7 @@ def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> Struc
     ) -> str:
         """通过路由处理任务。"""
         result = router_agent.invoke(
-            _build_router_input(query, runtime.state),
+            _build_router_input(query, runtime.state, runtime.context),
             context=runtime.context,
         )
         return result["final_result"]
@@ -445,7 +471,7 @@ def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> Struc
     ) -> str:
         """通过路由处理任务。"""
         result = await router_agent.ainvoke(
-            _build_router_input(query, runtime.state),
+            _build_router_input(query, runtime.state, runtime.context),
             context=runtime.context,
         )
         return result["final_result"]
@@ -458,13 +484,42 @@ def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> Struc
     )
 
 
-def _build_router_input(query: str, state: AgentState) -> dict[str, Any]:
+def _build_router_input(
+    query: str,
+    state: AgentState,
+    context: Any = None,
+) -> dict[str, Any]:
     if not query.strip():
         # 未提供任务内容时，兜底取最近一条用户消息
         query = _extract_user_input(state)
-    return {
+
+    input_data: dict[str, Any] = {
         "query": query,
     }
+
+    # 指定了代理时，直接使用，跳过路由模型的路由判断
+    if target_agents := _get_target_agents(context):
+        input_data["target_agents"] = target_agents
+
+    return input_data
+
+
+def _get_target_agents(context: Any) -> list[AgentTask]:
+    """获取指定的任务代理。"""
+
+    if context is None:
+        return []
+    return list(getattr(context, "agents", None) or [])
+
+
+def _merge_task_context(background: str, task: str) -> str:
+    """合并共享背景和任务内容。"""
+
+    if not background.strip():
+        return task
+    if not task.strip():
+        return background
+    return f"【背景】{background}\n【任务】{task}"
 
 
 def _extract_user_input(state: AgentState) -> str:

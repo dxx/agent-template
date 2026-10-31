@@ -8,11 +8,14 @@ from agent.router.agent import (
     get_store,
     get_message_record_middleware,
 )
+from agent.router.hold import TaskAgentHolder, task_agent_holder
 
 __all__ = [
     "create_router_agent",
     "get_router_agent",
     "get_checkpointer",
     "get_store",
-    "get_message_record_middleware"
+    "get_message_record_middleware",
+    "TaskAgentHolder",
+    "task_agent_holder",
 ]
