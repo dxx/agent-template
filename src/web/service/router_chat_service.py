@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import AsyncIterator
+from typing import Any
 from langchain_core.messages import AIMessage, ToolMessage, AIMessageChunk
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command
@@ -93,6 +94,7 @@ async def router_chat_response(
                     yield chat_response
             elif event.event_type == EventType.UPDATE:
                 # 以下是 RouteAgentMiddleware 构建的节点
+                # 当前更新格式：agent.memory.router_state.RouterState
                 state = event.state or {}
                 if event.node == "router":
                     routers = state.get("routers", [])
@@ -102,6 +104,7 @@ async def router_chat_response(
                             msg_type=ResponseMsgTypeEnum.PROCESS,
                             content="路由到 " + "、".join(router.name for router in routers),
                         )
+                        _log_state(state)
                     else:
                         yield ChatResponse(
                             msg_id=str(uuid.uuid4()),
@@ -129,6 +132,16 @@ async def router_chat_response(
             msg_type=ResponseMsgTypeEnum.ERROR,
             content=f"{str(e)}",
         )
+
+
+def _log_state(state: dict[str, Any]) -> None:
+    """开发环境下打印路由状态。"""
+
+    settings = get_settings()
+    if settings.app_env != AppEnv.DEV.value:
+        return
+
+    logger.info("Router state: %s", state)
 
 
 def _parse_agents(
