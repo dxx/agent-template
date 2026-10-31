@@ -17,7 +17,7 @@ AGENT_PROMPT_REVIEW = """你是一个专业的审核助手，擅长检查和改�
 你的职责是审核文本，发现问题并提供改进建议。
 请确保你的审核细致、全面、客观。"""
 
-AGENT_PROMPT_GREET = "你是一个专业的招待助手，擅长和用户打招呼。"
+AGENT_PROMPT_GREETING = "你是一个专业的问候助手，擅长和用户打招呼。"
 
 AGENT_PROMPT_USER = "你是一个专业的维护用户信息的助手。"
 
@@ -30,6 +30,6 @@ AGENT_DESCRIPTION_WRITING = "擅长根据需求撰写高质量的内容。"
 
 AGENT_DESCRIPTION_REVIEW = "擅长检查和改进内容质量，对事物进行评价。"
 
-AGENT_DESCRIPTION_GREET = "擅长和用户打招呼。"
+AGENT_DESCRIPTION_GREETING = "擅长和用户打招呼。"
 
 AGENT_DESCRIPTION_USER = "用户信息管理。"

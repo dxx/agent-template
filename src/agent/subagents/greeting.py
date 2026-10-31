@@ -4,12 +4,12 @@ from pathlib import Path
 from agent.llm import create_chat_model
 from agent.middleware import SubTaskAgent, SkillsMiddleware
 from agent.subagents import SubAgentEnum
-from agent.prompts import AGENT_PROMPT_GREET, AGENT_DESCRIPTION_GREET
+from agent.prompts import AGENT_PROMPT_GREETING, AGENT_DESCRIPTION_GREETING
 from agent.skills import DirectorySkillLoader
 from agent.tools import greet
 from agent.memory import AppAgentContext, AppAgentState
 
-class GreetAgent(SubTaskAgent):
+class GreetingAgent(SubTaskAgent):
     """带有 Skills 的 Agent"""
     def __init__(self):
         
@@ -20,8 +20,8 @@ class GreetAgent(SubTaskAgent):
 
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
-            name=SubAgentEnum.GREET.value,
-            system_prompt=AGENT_PROMPT_GREET,
+            name=SubAgentEnum.GREETING.value,
+            system_prompt=AGENT_PROMPT_GREETING,
             context_schema=AppAgentContext,
             # 子代理需要访问 state 时配置
             state_schema=AppAgentState,
@@ -30,15 +30,15 @@ class GreetAgent(SubTaskAgent):
                 SkillsMiddleware(
                     loader=DirectorySkillLoader([str(skill_dir)]),
                     grouped_tools={
-                        # 当使用 greet skill 时动态加载 greet 工具
-                        "greet": [greet]
+                        # 当使用 greeting skill 时动态加载 greet 工具
+                        "greeting": [greet]
                     }
                 )
             ]
         )
 
         super().__init__(
-            name=SubAgentEnum.GREET.value,
-            description=AGENT_DESCRIPTION_GREET,
+            name=SubAgentEnum.GREETING.value,
+            description=AGENT_DESCRIPTION_GREETING,
             agent=agent
         )

@@ -7,5 +7,5 @@ class SubAgentEnum(StrEnum):
     RESEARCH = "research"
     WRITING = "writing"
     REVIEW = "review"
-    GREET = "greet"
+    GREETING = "greeting"
     USER = "user"

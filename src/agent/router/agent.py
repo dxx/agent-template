@@ -22,7 +22,7 @@ from agent.middleware import (
     MessageRecordMiddleware,
 )
 from agent.router.file_manager import FileManagerAgent
-from agent.router.greet import GreetAgent
+from agent.router.greeting import GreetingAgent
 from agent.router.hold import task_agent_holder
 from agent.router.research import ResearchAgent
 from agent.router.review import ReviewAgent
@@ -37,7 +37,7 @@ _route_task_agents = [
     WritingAgent(),
     ResearchAgent(),
     ReviewAgent(),
-    GreetAgent(),
+    GreetingAgent(),
     FileManagerAgent(),
 ]
 

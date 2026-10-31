@@ -25,7 +25,7 @@ from agent.subagents.file_manager import FileManagerAgent
 from agent.subagents.research import ReseachAgent
 from agent.subagents.writing import WritingAgent
 from agent.subagents.review import ReviewAgent
-from agent.subagents.greet import GreetAgent
+from agent.subagents.greeting import GreetingAgent
 from agent.subagents.user import UserAgent
 
 
@@ -75,7 +75,7 @@ def create_main_agent() -> CompiledStateGraph[AppAgentState, AppAgentContext, An
         ReseachAgent(),
         WritingAgent(),
         ReviewAgent(),
-        GreetAgent(),
+        GreetingAgent(),
         UserAgent(),
     ]
 
