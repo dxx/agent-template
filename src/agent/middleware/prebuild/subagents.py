@@ -83,7 +83,7 @@ class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         """
         self.system_prompt = system_prompt
         self.tools = [
-            _create_task_tool(sub_agents)
+            _create_task_tool(sub_agents, _TASK_TOOL_NAME)
         ]
 
     @override
@@ -114,7 +114,7 @@ class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         return request.override(system_message=new_system_message)
 
 
-def _create_task_tool(sub_agents: Sequence[SubTaskAgent]) -> StructuredTool:
+def _create_task_tool(sub_agents: Sequence[SubTaskAgent], tool_name: str) -> StructuredTool:
     """创建 Task 工具"""
 
     if not sub_agents:
@@ -165,7 +165,7 @@ def _create_task_tool(sub_agents: Sequence[SubTaskAgent]) -> StructuredTool:
                 "messages": [
                     # 返回工具消息
                     ToolMessage(
-                        name=_TASK_TOOL_NAME,
+                        name=tool_name,
                         content=message_text,
                         # 本次工具调用 ID
                         tool_call_id=runtime.tool_call_id
@@ -205,7 +205,7 @@ def _create_task_tool(sub_agents: Sequence[SubTaskAgent]) -> StructuredTool:
                 "messages": [
                     # 返回工具消息
                     ToolMessage(
-                        name=_TASK_TOOL_NAME,
+                        name=tool_name,
                         content=message_text,
                         # 本次工具调用 ID
                         tool_call_id=runtime.tool_call_id
@@ -230,7 +230,7 @@ def _create_task_tool(sub_agents: Sequence[SubTaskAgent]) -> StructuredTool:
     logger.debug("Registry subagents: %s", _subagent_registry)
 
     return StructuredTool.from_function(
-        name=_TASK_TOOL_NAME,
+        name=tool_name,
         description=tool_description,
         func=task,
         coroutine=atask
