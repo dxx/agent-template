@@ -1,5 +1,51 @@
 # 更新日志
 
+## 2026-10-31
+
+### 新增
+
+- 支持在请求中指定任务代理，跳过路由模型的路由判断。调用方通过 `AppAgentContext.agents` 或请求体 `agents` 字段传入 `AgentTask`，代理名未注册时返回错误。([89ddd72](https://github.com/dxx/agent-template/commit/89ddd7200152f03ff80a8a528192740dbfe6258f), [29541e3](https://github.com/dxx/agent-template/commit/29541e3146ff8c14be47a7f3144ec769a3641fe6))
+- 新增任务代理注册表 `TaskAgentHolder`（`src/agent/router/hold.py`），提供任务代理注册、名称查询能力，并新增 `GET /router/chat/agents` 接口查询可指定的任务代理。([89ddd72](https://github.com/dxx/agent-template/commit/89ddd7200152f03ff80a8a528192740dbfe6258f))
+- `route` 工具新增 `query` 参数，由主 Agent 整理后传入；为空时兜底取最近一条用户消息。([29541e3](https://github.com/dxx/agent-template/commit/29541e3146ff8c14be47a7f3144ec769a3641fe6))
+
+### 变更
+
+- 统一路由相关命名为 router 在前：`chat_router.py` 更名为 `router_chat.py`，`chat_router_service.py` 更名为 `router_chat_service.py`，`ChatRouteRequest` 更名为 `RouterChatRequest`，`AgentRouter` 更名为 `RouteTask`。([89ddd72](https://github.com/dxx/agent-template/commit/89ddd7200152f03ff80a8a528192740dbfe6258f))
+- 路由对话接口路径由 `/chat/router/*` 调整为 `/router/chat/*`。([89ddd72](https://github.com/dxx/agent-template/commit/89ddd7200152f03ff80a8a528192740dbfe6258f))
+- 问候代理更名为 `GreetingAgent`，`greet.py` 更名为 `greeting.py`；子代理枚举 `GREET` 更名为 `GREETING`（值为 `greeting`），提示词常量 `AGENT_PROMPT_GREET`、`AGENT_DESCRIPTION_GREET` 更名为 `AGENT_PROMPT_GREETING`、`AGENT_DESCRIPTION_GREETING`，技能目录 `skills/greet` 更名为 `skills/greeting`。([40eeaf6](https://github.com/dxx/agent-template/commit/40eeaf6f87a2f7363df97808c96c9c2acfd5db05))
+- `SubAgent` 更名为 `SubTaskAgent`，并与 `RouteTaskAgent` 合并到共同基类 `TaskAgent`。([dc6736a](https://github.com/dxx/agent-template/commit/dc6736aec3c66cfe025aecf5eabaff277eed7c93), [fc57389](https://github.com/dxx/agent-template/commit/fc57389f66a53a984c71b281befe62b73d8d30b0))
+- 统一 `Callable` 导入方式，路由图名称参数更名为 `graph_name`。([49b5a57](https://github.com/dxx/agent-template/commit/49b5a57c6b7da814ce92e0fd7d3b2e1462ab4525))
+
+## 2026-10-29
+
+### 新增
+
+- 支持同一 superstep 内的多个中断。([7710409](https://github.com/dxx/agent-template/commit/771040904d917cb4b9541f27f2e24c59b7a3cab1))
+
+### 变更
+
+- `Event` 的可选字段改为可空。([468325b](https://github.com/dxx/agent-template/commit/468325bb52fc197ec4918d242ffde95dbf5943d0))
+- Store 命名空间按项目前缀隔离，多个项目共用同一存储实例时互不串号。([89ab59a](https://github.com/dxx/agent-template/commit/89ab59aa81ac182c85f55583007aa2696a19e7a1))
+
+## 2026-10-26
+
+### 新增
+
+- 消息记录支持开关和裁切：`MessageRecordMiddleware` 新增 `keep_size`、`trigger_size` 参数，`AppAgentContext.message_record` 为 `False` 时不记录消息。([6baab84](https://github.com/dxx/agent-template/commit/6baab84045416dbc3e075a883653720166f45aac), [9607b7a](https://github.com/dxx/agent-template/commit/9607b7a9e7e0d55e79d2c8bab5c6b3a8e303319d))
+
+## 2026-10-25
+
+### 变更
+
+- 重构流式事件处理，新增 `agent/executor` 模块统一产出执行事件，会话工具迁移至 `src/session`。([a7a9861](https://github.com/dxx/agent-template/commit/a7a986142aa99618c25cfcc5cdbdf13b6fa40e0d))
+
+
+## 2026-10-16
+
+### 变更
+
+- 拒绝审批决策时追加一条消息。([8ff31dd](https://github.com/dxx/agent-template/commit/8ff31dd16d2c607928abe07e12fc3d6ce6c26dd2))
+
 ## 2026-10-14
 
 ### 变更
