@@ -20,7 +20,7 @@ StateGraph 路由到多个任务 Agent 执行。
 """
 
 from collections.abc import Awaitable, Callable, Sequence
-from typing import Any, Literal, override
+from typing import Any, override
 
 from langchain.agents.middleware import ModelRequest, ModelResponse
 from langchain.agents.middleware.types import (
@@ -38,7 +38,7 @@ from langchain_core.runnables import Runnable, RunnableConfig, RunnableLambda
 from langchain_core.tools import StructuredTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.types import Command, Send, StreamMode
+from langgraph.types import Command, Send
 
 from agent.memory.router_state import (
     AgentOutput,
@@ -46,6 +46,7 @@ from agent.memory.router_state import (
     RouterResult,
     RouterState,
 )
+from agent.middleware.prebuild.task_agent import TaskAgent
 
 from log import get_logger
 
@@ -78,60 +79,14 @@ _ROUTER_PROMPT = """
 """
 
 
-class RouteTaskAgent:
+class RouteTaskAgent(TaskAgent):
     """路由编排使用的子代理基类。"""
 
     def __init__(self, *, name: str, description: str, agent: Runnable[Any, Any]):
-        self.name = name
-        self.description = description
-        self._agent = agent
-
-    def get_name(self) -> str:
-        return self.name
-
-    def get_description(self) -> str:
-        return self.description
-
-    def invoke(
-        self,
-        input: dict[str, Any] | Command[Any] | None,
-        config: RunnableConfig | None = None,
-        *,
-        context: Any | None = None,
-        stream_mode: StreamMode = "values",
-        version: Literal["v1"] = "v1",
-        **kwargs: Any,
-    ) -> dict[str, Any] | Any:
-        return self._agent.invoke(
-            input,
-            config=config,
-            context=context,
-            stream_mode=stream_mode,
-            version=version,
-            **kwargs,
-        )
-
-    async def ainvoke(
-        self,
-        input: dict[str, Any] | Command[Any] | None,
-        config: RunnableConfig | None = None,
-        *,
-        context: Any | None = None,
-        stream_mode: StreamMode = "values",
-        version: Literal["v1"] = "v1",
-        **kwargs: Any,
-    ) -> dict[str, Any] | Any:
-        return await self._agent.ainvoke(
-            input,
-            config=config,
-            context=context,
-            stream_mode=stream_mode,
-            version=version,
-            **kwargs,
-        )
+        super().__init__(name=name, description=description, agent=agent)
 
 
-class _RouteGraphAgent(RouteTaskAgent):
+class _RouteGraphAgent(TaskAgent):
     """内部路由图。"""
 
     def __init__(
@@ -145,7 +100,6 @@ class _RouteGraphAgent(RouteTaskAgent):
         context_schema: type[Any] | None = None,
         system_prompt: str = _ROUTER_PROMPT,
     ):
-        self._name = name
         self._router_model = router_model
         self._merge_model = merge_model or router_model
         self._json_output_parser = JsonOutputParser(pydantic_object=RouterResult)
@@ -157,6 +111,7 @@ class _RouteGraphAgent(RouteTaskAgent):
         logger.debug("Registry router agents: %s", self._agents)
 
         self._graph = self._compile_graph(
+            name=name,
             state_schema=state_schema,
             context_schema=context_schema,
         )
@@ -169,6 +124,7 @@ class _RouteGraphAgent(RouteTaskAgent):
     def _compile_graph(
         self,
         *,
+        name: str,
         state_schema: type[RouterState],
         context_schema: type[Any] | None,
     ) -> CompiledStateGraph:
@@ -185,7 +141,7 @@ class _RouteGraphAgent(RouteTaskAgent):
         graph.add_edge("call_agent", "join")
         graph.add_edge("join", END)
 
-        return graph.compile(name=self._name)
+        return graph.compile(name=name)
 
     def _route(self, state: RouterState) -> dict[str, list[AgentRouter]]:
         if not state["query"]:

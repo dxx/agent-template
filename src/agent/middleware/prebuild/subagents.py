@@ -2,11 +2,11 @@
 使用一个 task 工具分发任务给子 Agent 执行任务
 """
 from collections.abc import Awaitable
-from typing import Any, override, Annotated, Callable, Literal
+from typing import Any, override, Annotated, Callable
 from langchain.messages import ToolMessage
-from langgraph.types import Command, StreamMode
+from langgraph.types import Command
 from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
-from langchain_core.runnables import Runnable, RunnableConfig
+from langchain_core.runnables import Runnable
 from langchain_core.tools import StructuredTool
 from langchain.tools import ToolRuntime
 from langchain_core.messages import (
@@ -21,6 +21,7 @@ from langchain.agents.middleware.types import (
     StateT,
 )
 
+from agent.middleware.prebuild.task_agent import TaskAgent
 from log import get_logger
 
 logger = get_logger(__name__)
@@ -59,57 +60,11 @@ _TASK_TOOL_DESCRIPTION = """
 3.尽可能的使用多个代理，提高性能。在单个消息中使用多种用途的工具
 """
 
-class SubAgent:
-    """SubAgent 基类"""
+class SubAgent(TaskAgent):
+    """SubAgent 基类。"""
 
     def __init__(self, *, name: str, description: str, agent: Runnable[Any, Any]):
-        self.name = name
-        self.description = description
-        self._agent = agent
-
-    def get_name(self) -> str:
-        return self.name
-
-    def get_description(self) -> str:
-        return self.description
-
-    def invoke(
-        self,
-        input: dict[str, Any] | Command[Any] | None,
-        config: RunnableConfig | None = None,
-        *,
-        context: Any | None = None,
-        stream_mode: StreamMode = "values",
-        version: Literal["v1"] = "v1",
-        **kwargs: Any,
-    ) -> dict[str, Any] | Any:
-        return self._agent.invoke(
-            input,
-            config=config,
-            context=context,
-            stream_mode=stream_mode,
-            version=version,
-            **kwargs,
-        )
-
-    async def ainvoke(
-        self,
-        input: dict[str, Any] | Command[Any] | None,
-        config: RunnableConfig | None = None,
-        *,
-        context: Any | None = None,
-        stream_mode: StreamMode = "values",
-        version: Literal["v1"] = "v1",
-        **kwargs: Any,
-    ) -> dict[str, Any] | Any:
-        return await self._agent.ainvoke(
-            input,
-            config=config,
-            context=context,
-            stream_mode=stream_mode,
-            version=version,
-            **kwargs,
-        )
+        super().__init__(name=name, description=description, agent=agent)
 
 
 def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
