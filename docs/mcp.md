@@ -52,7 +52,7 @@ mcp_config={
 ### ReseachAgent
 
 ```python
-class ReseachAgent(SubAgent):
+class ReseachAgent(SubTaskAgent):
     
     def __init__(self):
 

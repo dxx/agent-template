@@ -144,7 +144,7 @@ read_source_file(file_path: str) -> str
 from agent.skills import DirectorySkillLoader
 
 
-class GreetAgent(SubAgent):
+class GreetAgent(SubTaskAgent):
     """带有 Skills 的 Agent"""
     def __init__(self):
         

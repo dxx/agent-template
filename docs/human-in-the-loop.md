@@ -93,7 +93,7 @@ agent = create_agent(
 在 Subagent 中使用：
 
 ```python
-class FileManagerAgent(SubAgent):
+class FileManagerAgent(SubTaskAgent):
 
     def __init__(self):
         

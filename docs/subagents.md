@@ -35,7 +35,7 @@ create_agent(
 1. 用户向主 Agent 发起请求
 2. 主 Agent 判断任务是否适合委派给子代理
 3. 主 Agent 调用 `task` 工具，传入 `agent_name` 和 `task_input`
-4. `task` 工具根据 `agent_name` 找到对应 `SubAgent`
+4. `task` 工具根据 `agent_name` 找到对应 `SubTaskAgent`
 5. 中间件使用 `task_input` 构造新的子代理输入状态
 6. 子代理独立执行任务，并返回自己的最终状态
 7. 中间件提取子代理最后一条消息，作为 `ToolMessage` 返回给主 Agent
@@ -78,18 +78,25 @@ task(
 - 需要主 Agent 持续参与每一步判断的任务
 - 和用户直接交互的任务
 
-## SubAgent 基类
+## SubTaskAgent 基类
 
-所有子代理都通过 `SubAgent` 包装。
+所有子代理都通过 `SubTaskAgent` 包装。它继承自 `TaskAgent`，只做构造转发。
 
 ```python
-class SubAgent:
-    def __init__(self, *, name: str, description: str, agent: Runnable[Any, Any]): ...
-    def get_name(self) -> str: ...
-    def get_description(self) -> str: ...
-    def invoke(...): ...
-    async def ainvoke(...): ...
+class SubTaskAgent(TaskAgent):
+    def __init__(self, *, name: str, description: str, agent: Runnable[Any, Any]):
+        super().__init__(name=name, description=description, agent=agent)
 ```
+
+`TaskAgent` 提供的方法：
+
+| 方法 | 说明 |
+| --- | --- |
+| `get_name()` | 获取代理名称。 |
+| `get_description()` | 获取代理描述。 |
+| `get_agent()` | 获取内部实际执行的 Runnable。 |
+| `invoke(...)` | 同步执行代理。 |
+| `ainvoke(...)` | 异步执行代理。 |
 
 字段说明：
 
@@ -211,7 +218,7 @@ AppAgentState(sub_agent_calls=[])
 `FileManagerAgent` 使用文件系统中间件，并对读写文件操作启用人工审批。
 
 ```python
-class FileManagerAgent(SubAgent):
+class FileManagerAgent(SubTaskAgent):
     def __init__(self):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
@@ -247,7 +254,7 @@ class FileManagerAgent(SubAgent):
 `ReseachAgent` 使用 MCP 中间件接入 ArXiv 搜索服务。
 
 ```python
-class ReseachAgent(SubAgent):
+class ReseachAgent(SubTaskAgent):
     def __init__(self):
         agent = create_agent(
             model=create_chat_model(),
@@ -290,7 +297,7 @@ class ReseachAgent(SubAgent):
 `GreetAgent` 使用 `SkillsMiddleware` 加载技能，并根据技能动态启用工具。
 
 ```python
-class GreetAgent(SubAgent):
+class GreetAgent(SubTaskAgent):
     def __init__(self):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
@@ -333,10 +340,10 @@ from langchain.agents import create_agent
 
 from agent.llm import create_chat_model
 from agent.memory import AppAgentContext
-from agent.middleware import SubAgent
+from agent.middleware import SubTaskAgent
 
 
-class TranslateAgent(SubAgent):
+class TranslateAgent(SubTaskAgent):
     def __init__(self):
         agent = create_agent(
             model=create_chat_model(),
