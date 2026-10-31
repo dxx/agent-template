@@ -26,16 +26,17 @@ agent-template/
 │   │   │   ├── research.py     # 研究代理
 │   │   │   ├── writing.py      # 写作代理
 │   │   │   ├── review.py       # 审核代理
-│   │   │   ├── greet.py        # 问候代理
+│   │   │   ├── greeting.py     # 问候代理
 │   │   │   ├── user.py         # 用户代理
 │   │   │   └── agent_enum.py   # 子代理枚举
 │   │   ├── router/             # 路由代理模块
 │   │   │   ├── agent.py        # 路由模式主 Agent 创建函数
+│   │   │   ├── hold.py         # 任务代理注册表
 │   │   │   ├── file_manager.py # 路由文件管理代理
 │   │   │   ├── research.py     # 路由研究代理
 │   │   │   ├── writing.py      # 路由写作代理
 │   │   │   ├── review.py       # 路由审核代理
-│   │   │   └── greet.py        # 路由问候代理
+│   │   │   └── greeting.py     # 路由问候代理
 │   │   ├── hitl/               # 人工介入模块
 │   │   │   └── approve.py      # 审批内容生成
 │   │   ├── llm/                # LLM 模型封装
@@ -71,7 +72,7 @@ agent-template/
 │   │   │   ├── __init__.py     # 路由模块导出
 │   │   │   ├── health.py       # 健康检查路由
 │   │   │   ├── chat.py         # 对话路由
-│   │   │   ├── chat_router.py  # 路由 Agent 对话路由
+│   │   │   ├── router_chat.py # 路由 Agent 对话路由
 │   │   │   └── message.py      # 消息管理路由
 │   │   ├── middleware/         # 中间件
 │   │   │   ├── auth.py         # 认证中间件
@@ -84,7 +85,7 @@ agent-template/
 │   │   │   └── state.py        # 应用状态模型
 │   │   ├── service/            # 服务层
 │   │   │   ├── chat_service.py # 对话服务
-│   │   │   ├── chat_router_service.py # 路由 Agent 对话服务
+│   │   │   ├── router_chat_service.py # 路由 Agent 对话服务
 │   │   │   └── message_service.py # 消息服务
 │   ├── session/                # 会话管理
 │   │   ├── __init__.py
@@ -97,10 +98,10 @@ agent-template/
 │   ├── exception/              # 异常定义
 │   │   └── sys.py              # 系统异常
 │   └── skills/                 # 技能目录
-│       └── greet/              # 示例技能
+│       └── greeting/           # 示例技能
 │           ├── SKILL.md
 │           └── references/
-│               └── greet.md
+│               └── greeting.md
 ├── tests/
 │   ├── chat_api.http           # 对话 API 测试文件
 │   └── message_api.http        # 消息 API 测试文件
@@ -126,9 +127,9 @@ agent-template/
 - `entry.py`: Checkpointer 和 Store 的统一入口
   - `get_checkpointer()`: 获取当前 checkpointer（默认内存存储）
   - `get_store()`: 获取当前 store（默认内存存储）
-- `AppAgentContext`: 用户上下文，包含 `user_id`
+- `AppAgentContext`: 用户上下文，包含 `user_id`、`agents`（指定的任务代理，为空时由路由模型自动选择）
 - `AppAgentState`: Agent 状态，继承自 `AgentState`，包含 `sub_agent_calls` 记录调用的子代理
-- `RouterState`: 路由代理状态，包含 `query`、`routers`、`router`、`results` 和 `final_result`
+- `RouterState`: 路由代理状态，包含 `query`、`target_agents`、`routers`、`router`、`results` 和 `final_result`
 - `init_postgres_checkpointer()` / `close_postgres_checkpointer()`: 初始化和关闭 Checkpointer 连接池
 - `init_postgres_store()` / `close_postgres_store()`: 初始化和关闭 Store 连接池
 - 默认使用内存存储 (`InMemorySaver` 和 `InMemoryStore`)，生产环境可切换为 PostgreSQL
@@ -157,7 +158,7 @@ agent-template/
 | `ReseachAgent` | 从多个信息源收集整理信息 |
 | `WritingAgent` | 撰写高质量内容 |
 | `ReviewAgent` | 审核文本并提供改进建议 |
-| `GreetAgent` | 处理问候和基础交互 |
+| `GreetingAgent` | 处理问候和基础交互 |
 | `UserAgent` | 用户相关操作代理 |
 
 **路由代理系统** (`router/`):
@@ -168,7 +169,10 @@ agent-template/
 | `ResearchAgent` | 从多个信息源收集整理信息 |
 | `WritingAgent` | 撰写高质量内容 |
 | `ReviewAgent` | 审核文本并提供改进建议 |
-| `GreetAgent` | 处理问候和基础交互 |
+| `GreetingAgent` | 处理问候和基础交互 |
+
+- `hold.py`: 任务代理注册表 `TaskAgentHolder`，供路由图注册、`/router/chat/agents` 接口查询和指定代理名称校验
+- 指定任务代理：调用方通过 `AppAgentContext.agents` 或请求体 `agents` 字段指定，指定后跳过路由模型的路由判断
 
 **人工介入模块** (`hitl/`):
 - `approve.py`: 审批内容生成，将工具调用转换为用户可读的审批信息
@@ -203,7 +207,8 @@ agent-template/
 |------|------|------|
 | `/health` | GET | 健康检查 |
 | `/chat/stream` | POST | SSE 流式对话（需认证） |
-| `/chat/router/stream` | POST | SSE 路由 Agent 流式对话（需认证） |
+| `/router/chat/stream` | POST | SSE 路由 Agent 流式对话（需认证） |
+| `/router/chat/agents` | GET | 获取路由可调用的代理列表（需认证） |
 | `/message/chat/create` | POST | 创建新对话 |
 | `/message/all` | GET | 获取用户所有对话 |
 | `/message/chat/{chat_id}` | GET | 获取指定对话的消息列表 |
@@ -211,7 +216,7 @@ agent-template/
 | `/message/all` | DELETE | 删除用户所有对话 |
 
 **中间件** (`middleware/`):
-- `AuthMiddleware`: 基于请求头认证，公开路径白名单: `/docs`, `/openapi.json`, `/health`, `/test/chat/stream`
+- `AuthMiddleware`: 基于请求头认证，公开路径白名单: `/docs`, `/openapi.json`, `/health`, `/test/chat/stream`, `/test/router/chat/stream`
 - `ChatMiddleware`: 对话状态中间件，从请求中提取 `user_id` 和 `chat_id` 校验 `chat_id`
 
 

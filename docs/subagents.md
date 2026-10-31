@@ -12,7 +12,7 @@ sub_agents = [
     ReseachAgent(),
     WritingAgent(),
     ReviewAgent(),
-    GreetAgent(),
+    GreetingAgent(),
     UserAgent(),
 ]
 
@@ -122,7 +122,7 @@ raise ValueError(f"Duplicate agent: {name}")
 | `ReseachAgent` | `research` | 擅长从多个信息源收集和整理信息。 |
 | `WritingAgent` | `writing` | 擅长根据需求撰写高质量内容。 |
 | `ReviewAgent` | `review` | 擅长检查和改进内容质量，对事物进行评价。 |
-| `GreetAgent` | `greet` | 擅长和用户打招呼。 |
+| `GreetingAgent` | `greeting` | 擅长和用户打招呼。 |
 | `UserAgent` | `user` | 负责用户信息管理。 |
 
 ## 状态传递
@@ -294,30 +294,30 @@ class ReseachAgent(SubTaskAgent):
 
 ## 示例：技能子代理
 
-`GreetAgent` 使用 `SkillsMiddleware` 加载技能，并根据技能动态启用工具。
+`GreetingAgent` 使用 `SkillsMiddleware` 加载技能，并根据技能动态启用工具。
 
 ```python
-class GreetAgent(SubTaskAgent):
+class GreetingAgent(SubTaskAgent):
     def __init__(self):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
-            name=SubAgentEnum.GREET.value,
-            system_prompt=AGENT_PROMPT_GREET,
+            name=SubAgentEnum.GREETING.value,
+            system_prompt=AGENT_PROMPT_GREETING,
             context_schema=AppAgentContext,
             state_schema=AppAgentState,
             middleware=[
                 SkillsMiddleware(
                     loader=DirectorySkillLoader([str(skill_dir)]),
                     grouped_tools={
-                        "greet": [greet]
+                        "greeting": [greet]
                     },
                 )
             ],
         )
 
         super().__init__(
-            name=SubAgentEnum.GREET.value,
-            description=AGENT_DESCRIPTION_GREET,
+            name=SubAgentEnum.GREETING.value,
+            description=AGENT_DESCRIPTION_GREETING,
             agent=agent
         )
 ```
@@ -368,7 +368,7 @@ class SubAgentEnum(StrEnum):
     TRANSLATE = "translate"
 ```
 
-也可以像 `GreetAgent` 和 `UserAgent` 一样直接使用字符串名称。
+也可以像 `GreetingAgent` 和 `UserAgent` 一样直接使用字符串名称。
 
 ### 3. 注册到主 Agent
 
@@ -382,7 +382,7 @@ sub_agents = [
     ReseachAgent(),
     WritingAgent(),
     ReviewAgent(),
-    GreetAgent(),
+    GreetingAgent(),
     UserAgent(),
     TranslateAgent(),
 ]

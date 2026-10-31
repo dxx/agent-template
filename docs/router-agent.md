@@ -17,7 +17,7 @@ def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any
         WritingAgent(),
         ResearchAgent(),
         ReviewAgent(),
-        GreetAgent(),
+        GreetingAgent(),
         FileManagerAgent(),
     ]
 
@@ -67,20 +67,33 @@ def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any
 `route` 工具由 `RouteAgentMiddleware` 自动创建。
 
 ```python
-route(runtime: ToolRuntime[Any, AgentState]) -> str
+route(
+    query: Annotated[str, "要路由处理的任务内容，包含必要的上下文信息"],
+    runtime: ToolRuntime[Any, AgentState],
+) -> str
 ```
 
-工具调用时不会要求模型显式传入用户问题，而是从当前主 Agent 状态中提取最近一条用户消息：
+| 参数 | 说明 |
+| --- | --- |
+| `query` | 要路由处理的任务内容。必须是完整、自包含的描述，包含执行任务所需的全部上下文。 |
+| `runtime` | LangChain 工具运行时对象，由框架注入。 |
+
+`query` 由主 Agent 整理后传入。路由代理不持有对话历史，无法获知前序对话中补充的
+信息，因此主 Agent 需要把必要上下文写入 `query`。
+
+`query` 为空时，会兜底从当前主 Agent 状态中提取最近一条用户消息：
 
 ```python
-def _build_router_input(state: AgentState) -> dict[str, Any]:
-    query = _extract_user_input(state)
+def _build_router_input(query: str, state: AgentState) -> dict[str, Any]:
+    if not query.strip():
+        # 未提供任务内容时，兜底取最近一条用户消息
+        query = _extract_user_input(state)
     return {
         "query": query,
     }
 ```
 
-支持的消息形式：
+兜底支持的消息形式：
 
 - `HumanMessage`
 - `{"role": "user", "content": "..."}`
@@ -112,8 +125,9 @@ START -> router -> call_agent -> join -> END
 ```python
 class RouterState(TypedDict):
     query: str
-    routers: list[AgentRouter]
-    router: NotRequired[AgentRouter]
+    target_agents: NotRequired[list[AgentTask]]
+    routers: list[RouteTask]
+    router: NotRequired[RouteTask]
     results: Annotated[list[AgentOutput], add_results]
     final_result: str
 ```
@@ -122,7 +136,8 @@ class RouterState(TypedDict):
 
 | 字段 | 说明 |
 | --- | --- |
-| `query` | 原始用户输入。 |
+| `query` | 待路由处理的任务内容，由主 Agent 通过 `route` 工具传入。 |
+| `target_agents` | 指定的任务代理。非空时跳过路由模型的路由判断，直接调用指定代理。 |
 | `routers` | 路由模型输出的任务代理列表。 |
 | `router` | 当前分支正在执行的路由信息，属于内部调度字段。 |
 | `results` | 多个任务代理的输出结果。 |
@@ -130,18 +145,76 @@ class RouterState(TypedDict):
 
 `results` 使用自定义 reducer `add_results`，用于合并多个并发分支的输出。当传入空列表时会清空结果。
 
+## 指定任务代理
+
+除了让路由模型自动选择，还可以直接指定要调用的代理。指定格式为 `AgentTask`：
+
+```python
+class AgentTask(TypedDict):
+    name: str
+    query: str
+```
+
+调用方在 `AppAgentContext.agents` 中传入后：
+
+1. `route` 工具把指定的代理放入 `RouterState.target_agents`
+2. `router` 节点检测到 `target_agents` 非空，跳过路由模型的路由判断
+3. 每个代理的任务内容为「共享背景 + 指定任务」：
+
+   ```text
+   【背景】主 Agent 整理的 query
+   【任务】指定的该代理的任务
+   ```
+
+共享背景即主 Agent 写入 `route` 工具的 `query`，指定任务来自 `AgentTask.query`。两者
+合并后作为代理的任务内容下发，保证代理既知道整体意图，也知道自己该做什么。
+
+### HTTP 接口用法
+
+Web 层通过请求体的 `agents` 字段传入指定代理，字段格式与 `AgentTask` 一致：
+
+```json
+{
+  "content": "帮我写一首关于 Agent 的诗",
+  "agents": [
+    {"name": "writing", "query": "写一首关于 Agent 的诗，要求 20 字以内"}
+  ]
+}
+```
+
+服务层会先校验指定代理：
+
+- `name` 或 `query` 为空的条目会被忽略
+- `name` 未注册的请求直接返回错误，不进入路由流程
+
+### 查询可用代理
+
+已注册的任务代理可以通过 `GET /router/chat/agents` 查询，返回名称和描述：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {"name": "writing", "description": "擅长根据需求撰写高质量内容。"}
+  ]
+}
+```
+
+调用方可以先取回代理名称，再在请求的 `agents` 中指定。
+
 ## 路由结果结构
 
 路由模型需要输出结构化结果 `RouterResult`。
 
 ```python
-class AgentRouter(BaseModel):
+class RouteTask(BaseModel):
     query: str = Field(description="代理处理的输入内容")
     name: str = Field(description="代理名称")
 
 
 class RouterResult(BaseModel):
-    routers: list[AgentRouter] = Field(default_factory=list)
+    routers: list[RouteTask] = Field(default_factory=list)
 ```
 
 示例：
@@ -171,15 +244,28 @@ class RouterResult(BaseModel):
 
 ## RouteTaskAgent
 
-所有路由任务代理都通过 `RouteTaskAgent` 包装。
+所有路由任务代理都通过 `RouteTaskAgent` 包装。它继承自任务代理基类 `TaskAgent`，
+本身不实现额外逻辑，只用于区分路由场景：
 
 ```python
-class RouteTaskAgent:
+class RouteTaskAgent(TaskAgent):
+    """路由编排使用的子代理基类。"""
+
+    def __init__(self, *, name: str, description: str, agent: Runnable[Any, Any]):
+        super().__init__(name=name, description=description, agent=agent)
+```
+
+名称、描述和调用入口都由基类 `TaskAgent`（`src/agent/middleware/prebuild/task_agent.py`）提供，
+`SubTaskAgent` 同样继承自它：
+
+```python
+class TaskAgent:
     def __init__(self, *, name: str, description: str, agent: Runnable[Any, Any]): ...
     def get_name(self) -> str: ...
     def get_description(self) -> str: ...
-    def invoke(...): ...
-    async def ainvoke(...): ...
+    def get_agent(self) -> Runnable[Any, Any]: ...
+    def invoke(self, input, config=None, *, context=None, **kwargs): ...
+    async def ainvoke(self, input, config=None, *, context=None, **kwargs): ...
 ```
 
 字段说明：
@@ -190,11 +276,37 @@ class RouteTaskAgent:
 | `description` | 任务代理能力描述，会出现在路由提示词中。 |
 | `agent` | 实际执行任务的 LangChain Runnable，通常由 `create_agent` 创建。 |
 
-注册任务代理时，如果出现重复名称，会抛出异常：
+`agent` 需要支持 `context` 参数，常见的有 LangGraph 编译后的 `CompiledStateGraph`、
+LangGraph `Pregel` 实例和 `create_agent` 创建的 agent。
+
+路由图构建代理注册表时，如果出现重复名称，会抛出异常：
 
 ```python
 raise ValueError(f"Duplicate agent: {name}")
 ```
+
+## 任务代理注册表
+
+可调用的任务代理统一注册在 `TaskAgentHolder` 中（`src/agent/router/hold.py`）：
+
+```python
+from agent.router import task_agent_holder
+
+task_agent_holder.register(WritingAgent())
+```
+
+| 方法 | 说明 |
+| --- | --- |
+| `register(agent)` | 注册任务代理，名称重复时抛出异常。 |
+| `get_agents()` | 获取全部任务代理。 |
+| `get_agent_names()` | 获取全部任务代理名称。 |
+| `get_agent(name)` | 按名称获取任务代理，不存在时返回 `None`。 |
+
+注册表有三处用途：
+
+- 任务代理列表创建时同时注册到路由中间件和注册表，两边保持一致
+- `GET /router/chat/agents` 接口查询可指定的代理
+- 服务层校验请求中指定的代理名称是否有效
 
 ## 内置任务代理
 
@@ -205,7 +317,7 @@ raise ValueError(f"Duplicate agent: {name}")
 | `WritingAgent` | `writing` | 擅长根据需求撰写高质量内容。 |
 | `ResearchAgent` | `research` | 擅长从多个信息源收集和整理信息。 |
 | `ReviewAgent` | `review` | 擅长检查和改进内容质量，对事物进行评价。 |
-| `GreetAgent` | `greet` | 擅长和用户打招呼。 |
+| `GreetingAgent` | `greeting` | 擅长和用户打招呼。 |
 | `FileManagerAgent` | `file_manager` | 擅长对文件进行管理。 |
 
 ## 任务代理输入
@@ -213,7 +325,7 @@ raise ValueError(f"Duplicate agent: {name}")
 调用任务代理时，路由图会把当前 `RouterState` 和当前路由任务合并为新的输入：
 
 ```python
-def _build_agent_input(state: RouterState, router: AgentRouter) -> dict[str, Any]:
+def _build_agent_input(state: RouterState, router: RouteTask) -> dict[str, Any]:
     return {
         **state,
         "messages": [{"role": "user", "content": router.query}],
@@ -344,32 +456,32 @@ class FileManagerAgent(RouteTaskAgent):
 
 ## 示例：技能任务代理
 
-`GreetAgent` 使用远程技能加载器加载 greet 技能，并在技能命中时启用 `greet` 工具。
+`GreetingAgent` 使用远程技能加载器加载 greeting 技能，并在技能命中时启用 `greet` 工具。
 
 ```python
-class GreetAgent(RouteTaskAgent):
+class GreetingAgent(RouteTaskAgent):
     def __init__(self):
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
-            name=SubAgentEnum.GREET.value,
-            system_prompt=AGENT_PROMPT_GREET,
+            name=SubAgentEnum.GREETING.value,
+            system_prompt=AGENT_PROMPT_GREETING,
             context_schema=AppAgentContext,
             state_schema=AppAgentState,
             middleware=[
                 SkillsMiddleware(
                     loader=RemoteSkillLoader([
-                        "https://raw.githubusercontent.com/dxx/agent-template/refs/heads/main/src/skills/greet/SKILL.md"
+                        "https://raw.githubusercontent.com/dxx/agent-template/refs/heads/main/src/skills/greeting/SKILL.md"
                     ]),
                     grouped_tools={
-                        "greet": [greet],
+                        "greeting": [greet],
                     },
                 )
             ],
         )
 
         super().__init__(
-            name=SubAgentEnum.GREET.value,
-            description=AGENT_DESCRIPTION_GREET,
+            name=SubAgentEnum.GREETING.value,
+            description=AGENT_DESCRIPTION_GREETING,
             agent=agent,
         )
 ```
@@ -417,7 +529,7 @@ agents = [
     WritingAgent(),
     ResearchAgent(),
     ReviewAgent(),
-    GreetAgent(),
+    GreetingAgent(),
     FileManagerAgent(),
     TranslateAgent(),
 ]
@@ -438,7 +550,7 @@ description="擅长翻译和润色多语言内容"
 | 对比项 | `RouteAgentMiddleware` | `SubAgentMiddleware` |
 | --- | --- | --- |
 | 主 Agent 工具 | `route` | `task` |
-| 代理选择方式 | 内部路由模型自动选择 | 主 Agent 指定 `agent_name` |
+| 代理选择方式 | 内部路由模型自动选择，也可由调用方指定 | 主 Agent 指定 `agent_name` |
 | 任务拆分位置 | 内部路由图拆分 | 主 Agent 自己拆分 |
 | 多代理合并 | 内部 `join` 节点合并 | 主 Agent 读取多个工具结果后自行总结 |
 | 适合场景 | 希望统一路由、自动拆分和合并 | 希望主 Agent 精确控制委派目标 |
@@ -457,8 +569,9 @@ description="擅长翻译和润色多语言内容"
 
 - `agents` 不能为空，否则路由没有可用目标
 - 任务代理名称不能重复
-- `route` 工具只从最近用户消息提取输入，不接收显式参数
+- `route` 工具的 `query` 由主 Agent 提供，为空时才兜底取最近一条用户消息
 - 路由模型输出中不存在的代理名称会被过滤
 - 如果路由结果为空，最终返回 `抱歉，没有处理结果`
 - 多个任务代理的中间过程默认不会直接展示给用户，用户只看到最终合并结果
 - 需要访问上下文时，路由图和任务代理都应配置合适的 `context_schema`
+- 开发环境（`APP_ENV=dev`）会打印路由节点的状态，便于排查路由结果

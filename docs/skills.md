@@ -6,10 +6,10 @@ Skills 技能系统允许 Agent 加载和使用专业领域的技能，通过 `S
 
 ```
 skills/
-└── greet/
+└── greeting/
     ├── SKILL.md          # 技能定义文件
     └── references/       # 参考文档目录
-        └── greet.md
+        └── greeting.md
 ```
 
 ## SKILL.md 格式
@@ -18,15 +18,15 @@ skills/
 
 ```markdown
 ---
-name: greet
+name: greeting
 description: 如何和用户打招呼
 ---
 
-# Greet
+# Greeting
 
 技能详细说明...
 
-参考 ./references/greet.md 中的说明进行回复。
+参考 ./references/greeting.md 中的说明进行回复。
 ```
 
 ### Frontmatter 字段
@@ -47,7 +47,7 @@ from agent.skills import DirectorySkillLoader
 middleware = SkillsMiddleware(
     loader=DirectorySkillLoader(["skills"]),  # 技能加载器
     grouped_tools={   # 动态加载的工具分组
-        "greet": [greet_tool]
+        "greeting": [greet_tool]
     }
 )
 ```
@@ -91,7 +91,7 @@ await loader.areload()  # 异步重新扫描目录并刷新技能缓存
 from agent.skills import RemoteSkillLoader
 
 loader = RemoteSkillLoader([
-    "https://example.com/skills/greet/SKILLS.md",
+    "https://example.com/skills/greeting/SKILLS.md",
     "https://example.com/skills/search/SKILLS.md",
 ])
 ```
@@ -106,8 +106,8 @@ loader = RemoteSkillLoader([
 
 **可用的技能:**
 
-- **greet**: 如何和用户打招呼
-path: /path/to/skills/greet/SKILL.md
+- **greeting**: 如何和用户打招呼
+path: /path/to/skills/greeting/SKILL.md
 
 **何时使用技能:**
 - 当需要更多详细信息去处理用户的问题
@@ -138,13 +138,13 @@ read_source_file(file_path: str) -> str
 
 ## 示例
 
-### GreetAgent
+### GreetingAgent
 
 ```python
 from agent.skills import DirectorySkillLoader
 
 
-class GreetAgent(SubTaskAgent):
+class GreetingAgent(SubTaskAgent):
     """带有 Skills 的 Agent"""
     def __init__(self):
         
@@ -155,8 +155,8 @@ class GreetAgent(SubTaskAgent):
 
         agent = create_agent(
             model=create_chat_model(enable_thinking=False),
-            name=SubAgentEnum.GREET.value,
-            system_prompt=AGENT_PROMPT_GREET,
+            name=SubAgentEnum.GREETING.value,
+            system_prompt=AGENT_PROMPT_GREETING,
             context_schema=AppAgentContext,
             # 子代理需要访问 state 时配置
             state_schema=AppAgentState,
@@ -165,36 +165,36 @@ class GreetAgent(SubTaskAgent):
                 SkillsMiddleware(
                     loader=DirectorySkillLoader([str(skill_dir)]),
                     grouped_tools={
-                        # 当使用 greet skill 时动态加载 greet 工具
-                        "greet": [greet]
+                        # 当使用 greeting skill 时动态加载 greet 工具
+                        "greeting": [greet]
                     }
                 )
             ]
         )
 
         super().__init__(
-            name=SubAgentEnum.GREET.value,
-            description=AGENT_DESCRIPTION_GREET,
+            name=SubAgentEnum.GREETING.value,
+            description=AGENT_DESCRIPTION_GREETING,
             agent=agent
         )
 ```
 
 ### 创建技能
 
-在 `skills/greet/` 目录下创建 `SKILL.md`：
+在 `skills/greeting/` 目录下创建 `SKILL.md`：
 
 ```markdown
 ---
-name: greet
+name: greeting
 description: 如何和用户打招呼
 ---
 
-# Greet
+# Greeting
 
-用户打招呼的时候参考 ./references/greet.md 中的说明进行回复。
+用户打招呼的时候参考 ./references/greeting.md 中的说明进行回复。
 ```
 
-创建参考文件 `skills/greet/references/greet.md`：
+创建参考文件 `skills/greeting/references/greeting.md`：
 
 ```markdown
 # 打招呼方式
@@ -223,7 +223,7 @@ user-token: user_123
 chat-id: chat_782e77c0-ddb6-45a7-b8ae-5c16a3f51916
 
 {
-  "content": "我叫 Alice，你叫什么。请使用 greet 技能回复"
+  "content": "我叫 Alice，你叫什么。请使用 greeting 技能回复"
 }
 ```
 
@@ -270,7 +270,7 @@ data: {"msg_id":"lc_run--019d9f61-504b-7821-9876-ca7f85d54ee5","msg_type":"norma
 
 ```python
 grouped_tools={
-    "greet": [greet_tool],  # 加载 greet 技能后，greet_tool 会被加入工具列表
+    "greeting": [greet_tool],  # 加载 greeting 技能后，greet_tool 会被加入工具列表
     "search": [search_tool]
 }
 ```
