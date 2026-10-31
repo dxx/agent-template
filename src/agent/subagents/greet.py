@@ -2,14 +2,14 @@ from langchain.agents import create_agent
 from pathlib import Path
 
 from agent.llm import create_chat_model
-from agent.middleware import SubAgent, SkillsMiddleware
+from agent.middleware import SubTaskAgent, SkillsMiddleware
 from agent.subagents import SubAgentEnum
 from agent.prompts import AGENT_PROMPT_GREET, AGENT_DESCRIPTION_GREET
 from agent.skills import DirectorySkillLoader
 from agent.tools import greet
 from agent.memory import AppAgentContext, AppAgentState
 
-class GreetAgent(SubAgent):
+class GreetAgent(SubTaskAgent):
     """带有 Skills 的 Agent"""
     def __init__(self):
         

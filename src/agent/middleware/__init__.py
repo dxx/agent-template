@@ -1,7 +1,7 @@
 from langchain.agents.middleware import SummarizationMiddleware
 from langchain.agents.middleware import HumanInTheLoopMiddleware
 
-from agent.middleware.prebuild.subagents import SubAgentMiddleware, SubAgent
+from agent.middleware.prebuild.subagents import SubAgentMiddleware, SubTaskAgent
 from agent.middleware.prebuild.router_agent import RouteAgentMiddleware, RouteTaskAgent
 from agent.middleware.prebuild.task_agent import TaskAgent
 from agent.middleware.prebuild.skills import SkillsMiddleware
@@ -14,10 +14,10 @@ from agent.middleware.message_record import MessageRecordMiddleware
 
 __all__ = [
     "TaskAgent",
-    "SubAgent",
+    "SubTaskAgent",
     "SubAgentMiddleware",
-    "RouteAgentMiddleware",
     "RouteTaskAgent",
+    "RouteAgentMiddleware",
     "SkillsMiddleware",
     "SummarizationMiddleware",
     "HumanInTheLoopMiddleware",

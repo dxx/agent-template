@@ -1,13 +1,13 @@
 from langchain.agents import create_agent
 
 from agent.llm import create_chat_model
-from agent.middleware import SubAgent
+from agent.middleware import SubTaskAgent
 from agent.tools import user
 from agent.subagents import SubAgentEnum
 from agent.prompts import AGENT_PROMPT_USER, AGENT_DESCRIPTION_USER
 from agent.memory import AppAgentContext, AppAgentState
 
-class UserAgent(SubAgent):
+class UserAgent(SubTaskAgent):
 
     def __init__(self):
         

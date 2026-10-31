@@ -7,9 +7,9 @@ from agent.subagents import SubAgentEnum
 from agent.hitl import default_allowed_decisions, default_description_callable
 from agent.prompts import AGENT_PROMPT_FILE_MANAGER, AGENT_DESCRIPTION_FILE_MANAGER
 from agent.memory import AppAgentContext
-from agent.middleware import SubAgent, FilesystemMiddleware, HumanInTheLoopMiddleware
+from agent.middleware import SubTaskAgent, FilesystemMiddleware, HumanInTheLoopMiddleware
 
-class FileManagerAgent(SubAgent):
+class FileManagerAgent(SubTaskAgent):
 
     def __init__(self):
         

@@ -2,11 +2,11 @@ from langchain.agents import create_agent
 
 from agent.llm import create_chat_model
 from agent.subagents import SubAgentEnum
-from agent.middleware import SubAgent
+from agent.middleware import SubTaskAgent
 from agent.prompts import AGENT_PROMPT_REVIEW, AGENT_DESCRIPTION_REVIEW
 from agent.memory import AppAgentContext
 
-class ReviewAgent(SubAgent):
+class ReviewAgent(SubTaskAgent):
 
     def __init__(self):
         

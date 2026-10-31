@@ -60,29 +60,76 @@ _TASK_TOOL_DESCRIPTION = """
 3.尽可能的使用多个代理，提高性能。在单个消息中使用多种用途的工具
 """
 
-class SubAgent(TaskAgent):
-    """SubAgent 基类。"""
+class SubTaskAgent(TaskAgent):
+    """SubTaskAgent 基类。"""
 
     def __init__(self, *, name: str, description: str, agent: Runnable[Any, Any]):
         super().__init__(name=name, description=description, agent=agent)
 
 
-def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
+class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
+    def __init__(
+            self,
+            sub_agents: list[SubTaskAgent],
+            system_prompt: str | None = _TASK_SYSTEM_PROMPT
+        ):
+        """初始化 Sub Agent 中间件。
+
+        Args:
+            sub_agents: 可被 `task` 工具调度的子代理列表。每个子代理必须实现
+                `get_name()` 和 `get_description()`。
+            system_prompt: 注入到模型系统提示词中的子代理使用说明。传入 `None` 时，
+                不追加子代理调度提示词，但仍会注册 `task` 工具。
+        """
+        self.system_prompt = system_prompt
+        self.tools = [
+            _create_task_tool(sub_agents)
+        ]
+
+    @override
+    def wrap_model_call(
+        self,
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], ModelResponse[ResponseT]]
+    ) -> ModelResponse[ResponseT]:
+        override_request = self._build_overridden_request(request)
+        return handler(override_request)
+
+    @override
+    async def awrap_model_call(
+        self,
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], Awaitable[ModelResponse[ResponseT]]]
+    ) -> ModelResponse[ResponseT]:
+        override_request = self._build_overridden_request(request)
+        return await handler(override_request)
+    
+    def _build_overridden_request(self, request: ModelRequest[ContextT]) -> ModelRequest[ContextT]:
+        if not self.system_prompt:
+            return request
+        new_content = list(
+            request.system_message.content_blocks if request.system_message else []
+        ) + [{"type": "text", "text": "\n\n" + self.system_prompt}]
+        new_system_message = SystemMessage(content_blocks=new_content)
+        return request.override(system_message=new_system_message)
+
+
+def _create_task_tool(sub_agents: list[SubTaskAgent]) -> StructuredTool:
     """创建 Task 工具"""
 
     if not sub_agents:
         raise ValueError("sub_agents is not empty")
     
-    _subagent_registry: dict[str, SubAgent] = {}
+    _subagent_registry: dict[str, SubTaskAgent] = {}
 
-    def _register_subagent(sub_agent: SubAgent):
-        """注册 SubAgent"""
+    def _register_subagent(sub_agent: SubTaskAgent):
+        """注册 SubTaskAgent"""
         agent_name = sub_agent.get_name()
         if agent_name in _subagent_registry:
             raise ValueError(f"Duplicate agent: {name}")
         _subagent_registry[agent_name] = sub_agent
 
-    def _get_subagent(agent_name: str) -> SubAgent:
+    def _get_subagent(agent_name: str) -> SubTaskAgent:
         if agent_name not in _subagent_registry:
             raise ValueError(f"Unknown agent: {agent_name}")
         return _subagent_registry[agent_name]
@@ -189,52 +236,6 @@ def _create_task_tool(sub_agents: list[SubAgent]) -> StructuredTool:
         coroutine=atask
     )
 
-class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
-    def __init__(
-            self,
-            sub_agents: list[SubAgent],
-            system_prompt: str | None = _TASK_SYSTEM_PROMPT
-        ):
-        """初始化 Sub Agent 中间件。
-
-        Args:
-            sub_agents: 可被 `task` 工具调度的子代理列表。每个子代理必须实现
-                `get_name()` 和 `get_description()`。
-            system_prompt: 注入到模型系统提示词中的子代理使用说明。传入 `None` 时，
-                不追加子代理调度提示词，但仍会注册 `task` 工具。
-        """
-        self.system_prompt = system_prompt
-        self.tools = [
-            _create_task_tool(sub_agents)
-        ]
-
-    @override
-    def wrap_model_call(
-        self,
-        request: ModelRequest[ContextT],
-        handler: Callable[[ModelRequest[ContextT]], ModelResponse[ResponseT]]
-    ) -> ModelResponse[ResponseT]:
-        override_request = self._build_overridden_request(request)
-        return handler(override_request)
-
-    @override
-    async def awrap_model_call(
-        self,
-        request: ModelRequest[ContextT],
-        handler: Callable[[ModelRequest[ContextT]], Awaitable[ModelResponse[ResponseT]]]
-    ) -> ModelResponse[ResponseT]:
-        override_request = self._build_overridden_request(request)
-        return await handler(override_request)
-    
-    def _build_overridden_request(self, request: ModelRequest[ContextT]) -> ModelRequest[ContextT]:
-        if not self.system_prompt:
-            return request
-        new_content = list(
-            request.system_message.content_blocks if request.system_message else []
-        ) + [{"type": "text", "text": "\n\n" + self.system_prompt}]
-        new_system_message = SystemMessage(content_blocks=new_content)
-        return request.override(system_message=new_system_message)
-
 
 def _prepare_state(content: str, runtime: ToolRuntime[Any, AgentState]) -> dict:
     """准备 state"""
@@ -247,7 +248,7 @@ def _prepare_state(content: str, runtime: ToolRuntime[Any, AgentState]) -> dict:
 def _return_message_with_state_update(result: dict) -> tuple[str, dict]:
     if "messages" not in result:
         error_msg = (
-            "SubAgent must return a state containing a 'messages' key. "
+            "SubTaskAgent must return a state containing a 'messages' key. "
             "in their state schema to communicate results back to the main agent."
         )
         raise ValueError(error_msg)

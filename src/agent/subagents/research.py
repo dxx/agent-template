@@ -3,13 +3,13 @@ from langchain.agents import create_agent
 
 from agent.llm import create_chat_model
 from agent.subagents import SubAgentEnum
-from agent.middleware import SubAgent
+from agent.middleware import SubTaskAgent
 from agent.prompts import AGENT_PROMPT_RESEARCH, AGENT_DESCRIPTION_RESEARCH
 from agent.memory import AppAgentContext
 from agent.middleware import MCPClientMiddleware
 
 
-class ReseachAgent(SubAgent):
+class ReseachAgent(SubTaskAgent):
     
     def __init__(self):
 
