@@ -10,7 +10,7 @@ chat-id: chat_782e77c0-ddb6-45a7-b8ae-5c16a3f51916
 }
 
 ### 访问远程技能
-POST http://localhost:8000/chat/router/stream
+POST http://localhost:8000/router/chat/stream
 Content-Type: application/json
 Connection: keep-alive
 user-token: user_123

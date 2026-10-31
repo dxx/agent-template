@@ -1,0 +1,26 @@
+### 对话
+POST http://localhost:8000/router/chat/stream
+Content-Type: application/json
+Connection: keep-alive
+user-token: user_123
+# 通过 /message/chat/create 创建获得，同一轮对话里面保持相同的 chat-id
+chat-id: chat_758d050e-7b3d-46a9-a994-1385fe38d884
+
+{
+  "content": "你好啊"
+}
+
+### 访问 writing agent
+POST http://localhost:8000/router/chat/stream
+Content-Type: application/json
+Connection: keep-alive
+user-token: user_123
+chat-id: chat_76d54f0e-759f-4142-af32-c36b3e32c202
+
+{
+  "content": "@writing 写一首关于 Agent 的诗，要求 20 字以内",
+  "agents": [
+    // 指定 agent 和对应的任务
+    {"name": "writing", "query": "写一首关于 Agent 的诗，要求 20 字以内"}
+  ]
+}
