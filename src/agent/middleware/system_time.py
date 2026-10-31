@@ -1,6 +1,6 @@
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Callable, override
+from typing import override
 from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
 from langchain.messages import SystemMessage
 from langchain.agents.middleware.types import (

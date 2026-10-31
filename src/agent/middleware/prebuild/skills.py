@@ -1,6 +1,6 @@
 """Skills 技能中间件。支持 skills 系统"""
-from collections.abc import Awaitable
-from typing import Any, override, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any, override
 from langchain.tools import BaseTool
 from langchain_core.tools import StructuredTool
 from langchain.tools.tool_node import ToolCallRequest

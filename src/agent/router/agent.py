@@ -76,14 +76,14 @@ def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any
     ]
 
     route_agent_middleware = RouteAgentMiddleware(
-        name="router_agent",
+        graph_name="router_graph",
         router_model=create_chat_model(enable_thinking=False),
         agents=agents,
         context_schema=AppAgentContext,
     )
 
     return create_agent(
-        name="router_main_agent",
+        name="router_agent",
         model=create_chat_model(enable_thinking=False),
         context_schema=AppAgentContext,
         checkpointer=checkpointer,

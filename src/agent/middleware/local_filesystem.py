@@ -1,9 +1,9 @@
 """本地 Filesystem 中间件。动态注入文件系统工具。"""
 
 import re
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Any, Callable, override
+from typing import Any, override
 
 from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
 from langchain.agents.middleware.types import ContextT, ResponseT, StateT

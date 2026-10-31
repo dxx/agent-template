@@ -38,7 +38,7 @@ from langchain_core.runnables import Runnable, RunnableConfig, RunnableLambda
 from langchain_core.tools import StructuredTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.types import Command, Send
+from langgraph.types import Send
 
 from agent.memory.router_state import (
     AgentOutput,
@@ -84,6 +84,74 @@ class RouteTaskAgent(TaskAgent):
 
     def __init__(self, *, name: str, description: str, agent: Runnable[Any, Any]):
         super().__init__(name=name, description=description, agent=agent)
+
+
+class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
+    def __init__(
+        self,
+        *,
+        graph_name: str,
+        agents: Sequence[RouteTaskAgent],
+        router_model: BaseChatModel,
+        merge_model: BaseChatModel | None = None,
+        state_schema: type[Any] = RouterState,
+        context_schema: type[Any] | None = None,
+        system_prompt: str | None = _ROUTER_SYSTEM_PROMPT,
+        router_prompt: str = _ROUTER_PROMPT,
+        tool_name: str = _ROUTER_TOOL_NAME,
+    ):
+        """初始化 Route Agent 中间件。
+
+        Args:
+            graph_name: 内部路由图名称。
+            agents: 可被路由调用的下游任务 Agent 列表。
+            router_model: 用于生成结构化路由结果的聊天模型。
+            merge_model: 用于合并多个下游 Agent 结果的聊天模型。不传时复用 `router_model`。
+            state_schema: 内部 StateGraph 使用的状态结构。需要透传父 Agent state 时，
+                传入包含对应字段的 state schema。
+            context_schema: 内部 StateGraph 的运行上下文结构。
+            system_prompt: 注入主 Agent 系统提示词的工具使用说明。传入 `None` 时不注入。
+            router_prompt: 路由模型提示词。不传时使用内置路由提示词。
+            tool_name: 注册到主 Agent 的路由工具名称。
+        """
+        self.system_prompt = system_prompt
+        self._router_agent = _RouteGraphAgent(
+            name=graph_name,
+            agents=agents,
+            router_model=router_model,
+            merge_model=merge_model,
+            state_schema=state_schema,
+            context_schema=context_schema,
+            system_prompt=router_prompt,
+        )
+        self.tools = [_create_router_tool(self._router_agent, tool_name)]
+
+    @override
+    def wrap_model_call(
+        self,
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], ModelResponse[ResponseT]],
+    ) -> ModelResponse[ResponseT]:
+        return handler(self._build_overridden_request(request))
+
+    @override
+    async def awrap_model_call(
+        self,
+        request: ModelRequest[ContextT],
+        handler: Callable[[ModelRequest[ContextT]], Awaitable[ModelResponse[ResponseT]]],
+    ) -> ModelResponse[ResponseT]:
+        return await handler(self._build_overridden_request(request))
+    
+    def get_graph(self) -> CompiledStateGraph:
+        return self._router_agent.get_graph()
+
+    def _build_overridden_request(self, request: ModelRequest[ContextT]) -> ModelRequest[ContextT]:
+        if not self.system_prompt:
+            return request
+        new_content = list(
+            request.system_message.content_blocks if request.system_message else []
+        ) + [{"type": "text", "text": "\n\n" + self.system_prompt}]
+        return request.override(system_message=SystemMessage(content_blocks=new_content))
 
 
 class _RouteGraphAgent(TaskAgent):
@@ -348,74 +416,6 @@ class _RouteGraphAgent(TaskAgent):
             description = agent.get_description()
             lines.append(f"- name: {name}\n  description: {description}")
         return "\n".join(lines)
-
-
-class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
-    def __init__(
-        self,
-        *,
-        name: str,
-        agents: Sequence[RouteTaskAgent],
-        router_model: BaseChatModel,
-        merge_model: BaseChatModel | None = None,
-        state_schema: type[Any] = RouterState,
-        context_schema: type[Any] | None = None,
-        system_prompt: str | None = _ROUTER_SYSTEM_PROMPT,
-        router_prompt: str = _ROUTER_PROMPT,
-        tool_name: str = _ROUTER_TOOL_NAME,
-    ):
-        """初始化 Route Agent 中间件。
-
-        Args:
-            name: 内部路由图名称。
-            agents: 可被路由调用的下游任务 Agent 列表。
-            router_model: 用于生成结构化路由结果的聊天模型。
-            merge_model: 用于合并多个下游 Agent 结果的聊天模型。不传时复用 `router_model`。
-            state_schema: 内部 StateGraph 使用的状态结构。需要透传父 Agent state 时，
-                传入包含对应字段的 state schema。
-            context_schema: 内部 StateGraph 的运行上下文结构。
-            system_prompt: 注入主 Agent 系统提示词的工具使用说明。传入 `None` 时不注入。
-            router_prompt: 路由模型提示词。不传时使用内置路由提示词。
-            tool_name: 注册到主 Agent 的路由工具名称。
-        """
-        self.system_prompt = system_prompt
-        self._router_agent = _RouteGraphAgent(
-            name=name,
-            agents=agents,
-            router_model=router_model,
-            merge_model=merge_model,
-            state_schema=state_schema,
-            context_schema=context_schema,
-            system_prompt=router_prompt,
-        )
-        self.tools = [_create_router_tool(self._router_agent, tool_name)]
-
-    @override
-    def wrap_model_call(
-        self,
-        request: ModelRequest[ContextT],
-        handler: Callable[[ModelRequest[ContextT]], ModelResponse[ResponseT]],
-    ) -> ModelResponse[ResponseT]:
-        return handler(self._build_overridden_request(request))
-
-    @override
-    async def awrap_model_call(
-        self,
-        request: ModelRequest[ContextT],
-        handler: Callable[[ModelRequest[ContextT]], Awaitable[ModelResponse[ResponseT]]],
-    ) -> ModelResponse[ResponseT]:
-        return await handler(self._build_overridden_request(request))
-    
-    def get_graph(self) -> CompiledStateGraph:
-        return self._router_agent.get_graph()
-
-    def _build_overridden_request(self, request: ModelRequest[ContextT]) -> ModelRequest[ContextT]:
-        if not self.system_prompt:
-            return request
-        new_content = list(
-            request.system_message.content_blocks if request.system_message else []
-        ) + [{"type": "text", "text": "\n\n" + self.system_prompt}]
-        return request.override(system_message=SystemMessage(content_blocks=new_content))
 
 
 def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> StructuredTool:

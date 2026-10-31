@@ -1,8 +1,8 @@
 """Sub Agent 中间件
 使用一个 task 工具分发任务给子 Agent 执行任务
 """
-from collections.abc import Awaitable
-from typing import Any, override, Annotated, Callable
+from collections.abc import Awaitable, Callable, Sequence
+from typing import Any, override, Annotated
 from langchain.messages import ToolMessage
 from langgraph.types import Command
 from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
@@ -70,7 +70,7 @@ class SubTaskAgent(TaskAgent):
 class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
     def __init__(
             self,
-            sub_agents: list[SubTaskAgent],
+            sub_agents: Sequence[SubTaskAgent],
             system_prompt: str | None = _TASK_SYSTEM_PROMPT
         ):
         """初始化 Sub Agent 中间件。
@@ -114,7 +114,7 @@ class SubAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         return request.override(system_message=new_system_message)
 
 
-def _create_task_tool(sub_agents: list[SubTaskAgent]) -> StructuredTool:
+def _create_task_tool(sub_agents: Sequence[SubTaskAgent]) -> StructuredTool:
     """创建 Task 工具"""
 
     if not sub_agents:

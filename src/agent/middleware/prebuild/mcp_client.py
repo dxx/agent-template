@@ -2,8 +2,8 @@
 连接 MCP Server，动态注入 tools
 """
 
-from collections.abc import Awaitable
-from typing import Any, override, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any, override
 from langchain.tools import BaseTool
 from langchain.tools.tool_node import ToolCallRequest
 from langchain.agents.middleware import (

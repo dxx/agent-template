@@ -4,8 +4,8 @@
 工具异常直接中断 agent 执行。
 """
 
-from collections.abc import Awaitable
-from typing import Any, Callable, override
+from collections.abc import Awaitable, Callable
+from typing import Any, override
 
 from langchain.agents.middleware.types import (
     AgentMiddleware,
