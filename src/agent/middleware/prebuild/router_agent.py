@@ -6,7 +6,7 @@ StateGraph 路由到多个任务 Agent 执行。
 `RouteAgentMiddleware` 的内部流程：
 
 1. 向主 Agent 注册 `route` 工具
-2. 工具从当前 `runtime.state["messages"]` 中提取最近一条用户输入
+2. 工具接收主 Agent 整理的 `query` 作为待处理任务内容
 3. 内部 `_RouteGraphAgent` 使用 `StateGraph` 执行 `router → call_agent → join`
 4. `router` 节点用 LLM 生成结构化 `RouterResult`
 5. `call_agent` 节点根据路由结果调用一个或多个 `RouteTaskAgent`
@@ -20,7 +20,7 @@ StateGraph 路由到多个任务 Agent 执行。
 """
 
 from collections.abc import Awaitable, Callable, Sequence
-from typing import Any, override
+from typing import Annotated, Any, override
 
 from langchain.agents.middleware import ModelRequest, ModelResponse
 from langchain.agents.middleware.types import (
@@ -53,6 +53,17 @@ from log import get_logger
 logger = get_logger(__name__)
 
 _ROUTER_TOOL_NAME = "route"
+
+_ROUTER_TOOL_DESCRIPTION = """
+通过路由处理任务
+
+路由代理会自动选择合适的任务代理执行，并把结果合并返回。
+
+## 说明
+1. `query` 参数必须是完整、自包含的任务描述，包含执行任务所需的全部上下文
+2. 路由代理不持有对话历史，无法获知你在前序对话中补充的信息
+3. 返回结果是文本消息，对用户不可见，你需要总结后回复用户
+"""
 
 _ROUTER_SYSTEM_PROMPT = """
 ## Router(路由任务)
@@ -98,7 +109,6 @@ class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
         context_schema: type[Any] | None = None,
         system_prompt: str | None = _ROUTER_SYSTEM_PROMPT,
         router_prompt: str = _ROUTER_PROMPT,
-        tool_name: str = _ROUTER_TOOL_NAME,
     ):
         """初始化 Route Agent 中间件。
 
@@ -112,7 +122,6 @@ class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
             context_schema: 内部 StateGraph 的运行上下文结构。
             system_prompt: 注入主 Agent 系统提示词的工具使用说明。传入 `None` 时不注入。
             router_prompt: 路由模型提示词。不传时使用内置路由提示词。
-            tool_name: 注册到主 Agent 的路由工具名称。
         """
         self.system_prompt = system_prompt
         self._router_agent = _RouteGraphAgent(
@@ -124,7 +133,7 @@ class RouteAgentMiddleware(AgentMiddleware[StateT, ContextT, ResponseT]):
             context_schema=context_schema,
             system_prompt=router_prompt,
         )
-        self.tools = [_create_router_tool(self._router_agent, tool_name)]
+        self.tools = [_create_router_tool(self._router_agent, _ROUTER_TOOL_NAME)]
 
     @override
     def wrap_model_call(
@@ -419,32 +428,40 @@ class _RouteGraphAgent(TaskAgent):
 
 
 def _create_router_tool(router_agent: _RouteGraphAgent, tool_name: str) -> StructuredTool:
-    def route(runtime: ToolRuntime[Any, AgentState]) -> str:
+    def route(
+        query: Annotated[str, "要路由处理的任务内容，包含必要的上下文信息"],
+        runtime: ToolRuntime[Any, AgentState],
+    ) -> str:
         """通过路由处理任务。"""
         result = router_agent.invoke(
-            _build_router_input(runtime.state),
+            _build_router_input(query, runtime.state),
             context=runtime.context,
         )
         return result["final_result"]
 
-    async def aroute(runtime: ToolRuntime[Any, AgentState]) -> str:
+    async def aroute(
+        query: Annotated[str, "要路由处理的任务内容，包含必要的上下文信息"],
+        runtime: ToolRuntime[Any, AgentState],
+    ) -> str:
         """通过路由处理任务。"""
         result = await router_agent.ainvoke(
-            _build_router_input(runtime.state),
+            _build_router_input(query, runtime.state),
             context=runtime.context,
         )
         return result["final_result"]
 
     return StructuredTool.from_function(
         name=tool_name,
-        description="通过路由处理任务。",
+        description=_ROUTER_TOOL_DESCRIPTION,
         func=route,
         coroutine=aroute,
     )
 
 
-def _build_router_input(state: AgentState) -> dict[str, Any]:
-    query = _extract_user_input(state)
+def _build_router_input(query: str, state: AgentState) -> dict[str, Any]:
+    if not query.strip():
+        # 未提供任务内容时，兜底取最近一条用户消息
+        query = _extract_user_input(state)
     return {
         "query": query,
     }
