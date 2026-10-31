@@ -22,7 +22,7 @@ def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any
     ]
 
     route_agent_middleware = RouteAgentMiddleware(
-        name="router_agent",
+        graph_name="router_agent",
         router_model=create_chat_model(enable_thinking=False),
         agents=agents,
         context_schema=AppAgentContext,
@@ -52,7 +52,7 @@ def create_router_agent() -> CompiledStateGraph[AgentState, AppAgentContext, Any
 
 | 参数 | 说明 |
 | --- | --- |
-| `name` | 内部路由图名称。 |
+| `graph_name` | 内部路由图名称。 |
 | `agents` | 可被路由调用的任务代理列表。 |
 | `router_model` | 用于生成结构化路由结果的模型。 |
 | `merge_model` | 用于合并多个任务代理结果的模型，不传时复用 `router_model`。 |
