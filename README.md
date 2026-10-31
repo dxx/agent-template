@@ -45,7 +45,7 @@ uv run src/main.py
 
 项目提供了完整的 HTTP 测试文件：
 - `tests/chat_api.http` - 子代理模式对话 API 测试
-- `tests/chat_router_api.http` - 路由模式对话 API 测试
+- `tests/router_chat_api.http` - 路由模式对话 API 测试
 - `tests/human-in-the-loop.http` - 人工介入 API 测试
 - `tests/mcp.http` - MCP 工具 API 测试
 - `tests/message_api.http` - 消息管理 API 测试
