@@ -3,14 +3,8 @@ from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from pathlib import Path
-from enum import StrEnum
 
-from config.types import ModelProvider
-
-
-class AppEnv(StrEnum):
-    DEV = "dev"
-    PROD = "prod"
+from config.types import AppEnv, ModelProvider
 
 _app_env = os.getenv("APP_ENV")
 
