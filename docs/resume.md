@@ -242,7 +242,7 @@ agent-template/
 | `LOG_FILE` | 日志文件路径 | logs/app.log |
 | `CORS_ALLOW_ORIGINS` | CORS 允许的 origins，JSON 数组格式 | 空 |
 | `CORS_ALLOW_CREDENTIALS` | 是否允许跨域请求携带凭证 | false |
-| `OPENAI_PROVIDER` | 模型提供商，可选：bailian、volcengine、deepseek、bigmodel、minimax | - (必填) |
+| `OPENAI_PROVIDER` | 模型提供商，可选：bailian、volcengine、deepseek、bigmodel、minimax，取值非法时启动报错 | - (必填) |
 | `OPENAI_BASE_URL` | OpenAI 兼容 API 地址，会自动补充 `/chat/completions` | - (必填) |
 | `OPENAI_API_KEY` | API Key，可引用环境变量如 ${API_KEY} | - (必填) |
 | `OPENAI_MODEL` | 模型名称 | - (必填) |

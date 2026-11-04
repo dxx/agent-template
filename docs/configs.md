@@ -1,6 +1,6 @@
 # 配置说明
 
-项目使用 `pydantic-settings` 管理配置。配置定义位于 `src/config/settings.py`，示例配置位于项目根目录 `.env.example`。
+项目使用 `pydantic-settings` 管理配置。配置定义位于 `src/config/settings.py`，类型定义位于 `src/config/types.py`，示例配置位于项目根目录 `.env.example`。
 
 ## 配置文件
 
@@ -49,6 +49,8 @@ env_file=[default_env_path, env_path]
 | `prod` | 生产环境。 |
 
 如果没有设置 `APP_ENV`，系统会默认设置为 `dev`，如果 `APP_ENV` 不是 `dev` 或 `prod`，应用启动时会抛出异常。
+
+`APP_ENV` 的可选值定义在 `src/config/types.py` 的 `AppEnv` 枚举。
 
 ## 快速开始
 
@@ -166,7 +168,7 @@ CORS_ALLOW_ORIGINS=["*"]
 
 | 环境变量 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `OPENAI_PROVIDER` | `str` | 无 | 模型提供商。 |
+| `OPENAI_PROVIDER` | `ModelProvider` | 无 | 模型提供商。 |
 | `OPENAI_BASE_URL` | `str` | 无 | OpenAI 兼容 API 地址，会自动补充 `/chat/completions` |
 | `OPENAI_API_KEY` | `str` | 无 | API Key。可引用环境变量，如 ${API_KEY} |
 | `OPENAI_MODEL` | `str` | 无 | 模型名称。 |
@@ -182,20 +184,78 @@ CORS_ALLOW_ORIGINS=["*"]
 | `bigmodel` | 智谱 BigModel 兼容接口。 |
 | `minimax` | MiniMax 兼容接口。 |
 
+`OPENAI_PROVIDER` 的取值定义在 `src/config/types.py` 的 `ModelProvider`，取值不在上表中时，`Settings` 初始化会失败，应用启动即抛出 `ValidationError`。
+
 模型创建逻辑位于 `src/agent/llm/model.py`：
 
 ```python
+extra_body = _build_extra_body(
+    settings.openai_provider,
+    enable_thinking,
+    stream_token_usage,
+    max_tokens,
+)
+extra_body.update(extra_params)
+
 init_chat_model(
     model=settings.openai_model,
     model_provider="openai",
     base_url=settings.openai_base_url,
     api_key=SecretStr(settings.openai_api_key) if settings.openai_api_key else None,
     temperature=settings.openai_temperature,
-    extra_body=_build_extra_body(settings.openai_provider, enable_thinking),
+    max_tokens=max_tokens,
+    streaming=streaming,
+    stream_usage=stream_token_usage,
+    reasoning_effort=reasoning_effort,
+    extra_body=extra_body,
 )
 ```
 
 不同提供商会生成不同的 `extra_body`。
+
+### create_chat_model 参数
+
+```python
+create_chat_model(
+    enable_thinking: bool = True,
+    reasoning_effort: str | None = None,
+    max_tokens: int | None = None,
+    streaming: bool = True,
+    stream_token_usage: bool = True,
+    **extra_params: Any,
+)
+```
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `enable_thinking` | `True` | 是否启用思考，按提供商转换为 `thinking` 或 `enable_thinking` 参数。 |
+| `reasoning_effort` | `None` | 调节思考长度，不同平台支持的可选值不同，默认不下发。 |
+| `max_tokens` | `None` | 模型输出的最大长度，包含思维链和模型回答。 |
+| `streaming` | `True` | 是否开启流式输出，对应 `stream` 参数。 |
+| `stream_token_usage` | `True` | 流式响应最后一个数据块是否包含 Token 消耗信息，对应 `stream_options.include_usage`。 |
+| `extra_params` | - | 透传给模型接口的额外参数，会合并进 `extra_body`。 |
+
+### 透传额外参数
+
+未识别的关键字参数会作为额外请求参数透传给模型接口，同名键以调用时传入的值为准，可以覆盖提供商默认参数：
+
+```python
+model = create_chat_model(
+    enable_thinking=True,
+    top_p=0.8,
+    thinking_budget=1024,
+)
+```
+
+上例最终发送的请求体参数：
+
+```json
+{
+  "enable_thinking": true,
+  "top_p": 0.8,
+  "thinking_budget": 1024
+}
+```
 
 ## Postgres 记忆配置
 
@@ -268,3 +328,4 @@ POSTGRES_MEMORY_CONN_STR=postgresql://user:password@127.0.0.1:5432/agent
 - `.env.{APP_ENV}` 可以覆盖 `.env` 中的同名配置
 - `get_settings()` 有缓存，运行时修改环境变量后需要调用 `reload_settings()` 才能重新读取
 - `OPENAI_PROVIDER` 会影响不同模型提供商的额外请求参数
+- `OPENAI_PROVIDER` 取值非法时，应用启动会失败，请检查配置是否拼写错误
