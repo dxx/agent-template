@@ -1,6 +1,6 @@
 [project]
 name = "agent-template"
-version = "0.3.0"
+version = "0.3.1"
 description = "An ai agent template"
 requires-python = ">=3.12"
 dependencies = [
