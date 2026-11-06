@@ -1,5 +1,18 @@
 # 更新日志
 
+## 2026-11-06
+
+### 新增
+
+- `create_chat_model` 支持透传额外请求参数，未识别的关键字参数会合并进 `extra_body`，同名键以调用时传入的值为准。([1a076bc](https://github.com/dxx/agent-template/commit/1a076bcbd944d8661357594f43292f97025c86c6))
+- 新增 `ModelProvider` 类型（`src/config/types.py`），`OPENAI_PROVIDER` 在应用启动时校验，取值非法直接抛出 `ValidationError`。([1a076bc](https://github.com/dxx/agent-template/commit/1a076bcbd944d8661357594f43292f97025c86c6))
+
+### 变更
+
+- `AppEnv` 枚举迁移至 `src/config/types.py`。([82ade6e](https://github.com/dxx/agent-template/commit/82ade6ec3e5609c08ea03313da231a26a1393d41))
+- `reasoning_effort` 改为可选参数，默认不再向模型接口下发。([1a076bc](https://github.com/dxx/agent-template/commit/1a076bcbd944d8661357594f43292f97025c86c6))
+- `stream_token_usage` 默认开启，关闭时显式下发 `stream_options.include_usage=false`。([1a076bc](https://github.com/dxx/agent-template/commit/1a076bcbd944d8661357594f43292f97025c86c6))
+
 ## 2026-10-31
 
 ### 新增
