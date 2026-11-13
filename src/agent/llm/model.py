@@ -25,7 +25,7 @@ def create_chat_model(
         streaming: 是否开启流式输出，langchain_openai 会转成 'stream': True 参数
         stream_token_usage: 流式返回的最后一个数据是否包包含 Token 消耗信息，streaming = True 时生效
             如果为 True，langchain_openai 会转成参数： 'stream_options': {'include_usage': True} 传给大模型接口
-            如果为 False，没有 'stream_options': {'include_usage': True}
+            如果为 False，没有 'stream_options': {'include_usage': False}
 
         extra_params: 透传给模型接口的额外参数，会合并进 extra_body，
             同名键以这里传入的为准（可覆盖提供商默认参数）
@@ -64,7 +64,7 @@ def _build_extra_body(
 
     Args:
         stream_token_usage: stream_token_usage = False 时明确传禁用流式 Token 消耗信息:
-            'stream_options': {'include_usage': True}，避免有些模型默认是在响应的最后一个
+            'stream_options': {'include_usage': False}，避免有些模型默认是在响应的最后一个
             数据块包含 Token 消耗信息
     """
     extra_body: dict[str, Any] = {}
