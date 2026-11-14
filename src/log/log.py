@@ -1,5 +1,6 @@
 import logging
 import sys
+from datetime import datetime
 from pathlib import Path
 from pythonjsonlogger import json
 from logging.handlers import TimedRotatingFileHandler
@@ -9,14 +10,17 @@ from monitor import get_current_trace_id
 
 settings = get_settings()
 
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+"""项目的根目录"""
 
 # 定义重命名规则：{ "原字段名": "新字段名" }
 _rename_fields = {
-    "levelname": "level",
-    "asctime": "log_time"
+    "levelname": "log_level",
 }
 
 _NA_VALUE = "N/A"
+
+_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 class _AppDefaultFilter(logging.Filter):
@@ -25,6 +29,14 @@ class _AppDefaultFilter(logging.Filter):
         record.app_id = settings.app_id
         record.app_env = settings.app_env
         record.trace_id = get_current_trace_id() or _NA_VALUE
+        # log_time format: YYYY-MM-DD HH:mm:ss.SSS
+        record.log_time = datetime.fromtimestamp(record.created).strftime(_TIME_FORMAT) + \
+            f".{int(record.msecs):03d}"
+        record.func_name = record.funcName
+        # Remove project path
+        relative_pathname = record.pathname.removeprefix(str(_PROJECT_ROOT) + "/")
+        # pathname:no
+        record.source = f"{relative_pathname}:{record.lineno}"
         return True
 
 
@@ -59,15 +71,15 @@ def _get_formatter(log_format_type: str) -> logging.Formatter:
     if log_format_type == "json":
         # json 内容
         return json.JsonFormatter(
-            fmt="%(levelname)s %(asctime)s %(trace_id)s %(app_env)s %(app_id)s %(name)s %(message)s %(pathname)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
+            fmt="%(levelname)s %(log_time)s %(trace_id)s %(app_env)s %(app_id)s %(name)s" \
+                " %(module)s %(func_name)s %(source)s %(message)s",
             json_ensure_ascii=False,
             rename_fields=_rename_fields
         )
     # 文本内容
     return logging.Formatter(
-        fmt="[%(levelname)s - %(asctime)s - %(trace_id)s - %(app_env)s - %(app_id)s - %(name)s] - %(message)s - %(pathname)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        fmt="[%(levelname)s - %(log_time)s - %(trace_id)s - %(app_env)s - %(app_id)s - %(name)s" \
+            " - %(module)s - %(func_name)s - %(source)s] %(message)s"
     )
 
 def _get_handlers(settings: Settings) -> list[logging.Handler]:
@@ -94,7 +106,9 @@ def _get_handlers(settings: Settings) -> list[logging.Handler]:
             )
     return handlers
 
+
 def _create_dir(filename: str):
-    path = Path.cwd().joinpath(filename)
-    if not path.parent.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
+    path = Path(filename)
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    path.parent.mkdir(parents=True, exist_ok=True)
