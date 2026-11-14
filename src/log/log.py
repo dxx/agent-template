@@ -5,6 +5,7 @@ from pythonjsonlogger import json
 from logging.handlers import TimedRotatingFileHandler
 
 from config import get_settings, Settings
+from monitor import get_current_trace_id
 
 settings = get_settings()
 
@@ -15,12 +16,15 @@ _rename_fields = {
     "asctime": "log_time"
 }
 
+_NA_VALUE = "N/A"
+
 
 class _AppDefaultFilter(logging.Filter):
     """给每条日志记录注入默认字段"""
     def filter(self, record):
-        record.app_id = settings.app_id if settings.app_id else "N/A"
+        record.app_id = settings.app_id
         record.app_env = settings.app_env
+        record.trace_id = get_current_trace_id() or _NA_VALUE
         return True
 
 
@@ -55,14 +59,14 @@ def _get_formatter(log_format_type: str) -> logging.Formatter:
     if log_format_type == "json":
         # json 内容
         return json.JsonFormatter(
-            fmt="%(levelname)s %(asctime)s %(app_env)s %(app_id)s %(name)s %(message)s %(pathname)s",
+            fmt="%(levelname)s %(asctime)s %(trace_id)s %(app_env)s %(app_id)s %(name)s %(message)s %(pathname)s",
             datefmt="%Y-%m-%d %H:%M:%S",
             json_ensure_ascii=False,
             rename_fields=_rename_fields
         )
     # 文本内容
     return logging.Formatter(
-        fmt="[%(levelname)s - %(asctime)s - %(app_env)s - %(app_id)s - %(name)s] - %(message)s - %(pathname)s",
+        fmt="[%(levelname)s - %(asctime)s - %(trace_id)s - %(app_env)s - %(app_id)s - %(name)s] - %(message)s - %(pathname)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 

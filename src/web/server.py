@@ -17,6 +17,7 @@ from agent.memory import (
     init_postgres_store,
     close_postgres_store,
 )
+from monitor import init_tracing, TracingMiddleware
 
 logger = get_logger(__name__)
 
@@ -34,6 +35,10 @@ async def lifespan(app: FastAPI):
     )
 
     logger.info("app_env=%s", settings.app_env)
+
+    # 初始化链路追踪
+    # 如使用 langfuse，直接初始化 langfuse client，这里就不需要初始化了
+    init_tracing()
 
     # 使用 Postgres checkpointer 时打开
     # await init_postgres_checkpointer()
@@ -135,6 +140,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 # 先添加后执行
 app.add_middleware(ChatMiddleware)
 app.add_middleware(AuthMiddleware)
+# 在其它中间件之前创建 trace
+app.add_middleware(TracingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allow_origins,
