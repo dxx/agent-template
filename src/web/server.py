@@ -17,7 +17,7 @@ from agent.memory import (
     init_postgres_store,
     close_postgres_store,
 )
-from monitor import init_tracing, TracingMiddleware
+from monitor import init_tracing, close_tracing, TracingMiddleware
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
     logger.info("app_env=%s", settings.app_env)
 
     # 初始化链路追踪
-    # 如使用 langfuse，直接初始化 langfuse client，这里就不需要初始化了
+    # 如使用 langfuse 或自己的 TracerProvider，这里换掉
     init_tracing()
 
     # 使用 Postgres checkpointer 时打开
@@ -57,6 +57,10 @@ async def lifespan(app: FastAPI):
 
     # 使用 Postgres Store 时打开
     # await close_postgres_store()
+
+    # 关闭链路追踪，导出未处理完的 span
+    # 如使用 langfuse 或自己的 TracerProvider，这里换掉
+    close_tracing()
 
 
 app = FastAPI(

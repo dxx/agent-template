@@ -1,19 +1,30 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from importlib.metadata import PackageNotFoundError, version
 
 from opentelemetry import propagate, trace
 from opentelemetry.context.context import Context
-from opentelemetry.trace import ProxyTracerProvider, SpanKind, Status, StatusCode
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
+from opentelemetry.semconv.attributes.deployment_attributes import (
+    DEPLOYMENT_ENVIRONMENT_NAME,
+)
 from opentelemetry.semconv.attributes.http_attributes import (
     HTTP_REQUEST_METHOD,
     HTTP_RESPONSE_STATUS_CODE,
 )
+from opentelemetry.semconv.attributes.service_attributes import (
+    SERVICE_NAME,
+    SERVICE_VERSION,
+)
 from opentelemetry.semconv.attributes.url_attributes import URL_PATH
+from opentelemetry.trace import ProxyTracerProvider, SpanKind, Status, StatusCode
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from config import get_settings
 
 OTEL_TRACE_ID_KEY = "otel-trace-id"
 """OTel 追踪 ID"""
@@ -23,13 +34,32 @@ _SPAN_NAME = "http.request"
 
 _id_generator = RandomIdGenerator()
 
+_initialized = False
+
 
 def init_tracing() -> None:
     """初始化全局 TracerProvider"""
 
+    global _initialized
+
     provider = trace.get_tracer_provider()
     if isinstance(provider, ProxyTracerProvider):
-        trace.set_tracer_provider(TracerProvider())
+        provider = TracerProvider(resource=_build_resource())
+        provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+        trace.set_tracer_provider(provider)
+        _initialized = True
+
+
+def close_tracing() -> None:
+    """关闭 TracerProvider，导出未处理完的 span"""
+
+    if not _initialized:
+        return
+
+    provider = trace.get_tracer_provider()
+    shutdown = getattr(provider, "shutdown", None)
+    if callable(shutdown):
+        shutdown()
 
 
 def new_trace_id() -> str:
@@ -149,6 +179,29 @@ class TracingMiddleware:
                 span.set_attribute(HTTP_RESPONSE_STATUS_CODE, status_code)
 
 
+def _build_resource() -> Resource:
+    """构建资源属性，标识服务信息"""
+
+    settings = get_settings()
+
+    return Resource.create(
+        {
+            SERVICE_NAME: settings.app_id,
+            SERVICE_VERSION: _get_app_version(),
+            DEPLOYMENT_ENVIRONMENT_NAME: settings.app_env,
+        }
+    )
+
+
+def _get_app_version() -> str:
+    """获取应用版本"""
+
+    try:
+        return version(get_settings().app_id)
+    except PackageNotFoundError:
+        return "unknown"
+
+
 def _build_remote_context(trace_id: str) -> trace.SpanContext | None:
     try:
         trace_id_value = int(trace_id, 16)
@@ -161,6 +214,6 @@ def _build_remote_context(trace_id: str) -> trace.SpanContext | None:
     return trace.SpanContext(
         trace_id=trace_id_value,
         span_id=_id_generator.generate_span_id(),
-        is_remote=True,
+        is_remote=False,
         trace_flags=trace.TraceFlags(trace.TraceFlags.SAMPLED),
     )

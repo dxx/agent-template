@@ -1,6 +1,7 @@
 from monitor.tracing import (
     OTEL_TRACE_ID_KEY,
     init_tracing,
+    close_tracing,
     get_current_trace_id,
     build_trace_header,
     TracingMiddleware,
@@ -9,6 +10,7 @@ from monitor.tracing import (
 __all__ = [
     "OTEL_TRACE_ID_KEY",
     "init_tracing",
+    "close_tracing",
     "get_current_trace_id",
     "build_trace_header",
     "TracingMiddleware",
