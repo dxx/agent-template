@@ -14,9 +14,6 @@ _async_postgres_conn_pool: AsyncConnectionPool | None = None
 
 _init_lock = asyncio.Lock()
 
-# 配置在配置文件中
-# CONNECTION_STRING = "postgresql://postgres:postgres@localhost:5432/langchain"
-
 
 async def init_postgres_checkpointer():
     """初始化 Postgres checkpointer"""
@@ -56,7 +53,7 @@ async def init_postgres_checkpointer():
             _async_postgres_checkpointer = checkpointer
             _async_postgres_conn_pool = conn_pool # type: ignore[arg-type]
 
-            logger.info("Postgre checkpointer 初始化完成...")
+            logger.info("Postgres checkpointer 初始化完成...")
         except Exception:
             await conn_pool.close()
             raise

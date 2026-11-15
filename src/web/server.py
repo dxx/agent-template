@@ -12,10 +12,10 @@ from exception import SystemException
 from config import get_settings
 from log import get_logger
 from agent.memory import (
-    init_postgres_checkpointer,
-    close_postgres_checkpointer,
-    init_postgres_store,
-    close_postgres_store,
+    init_checkpointer,
+    close_checkpointer,
+    init_store,
+    close_store,
 )
 from monitor import init_tracing, close_tracing, TracingMiddleware
 
@@ -40,11 +40,11 @@ async def lifespan(app: FastAPI):
     # 如使用 langfuse 或自己的 TracerProvider，这里换掉
     init_tracing()
 
-    # 使用 Postgres checkpointer 时打开
-    # await init_postgres_checkpointer()
+    # 初始化 Checkpointer
+    await init_checkpointer()
 
-    # 使用 Postgres store 时打开
-    # await init_postgres_store()
+    # 初始化 Store
+    await init_store()
 
     # ====== 上面进入上下文，__aenter__ ======
     yield
@@ -52,11 +52,11 @@ async def lifespan(app: FastAPI):
 
     logger.info("Application shutdown...")
 
-    # 使用 Postgres checkpointer 时打开
-    # await close_postgres_checkpointer()
+    # 关闭 Checkpointer
+    await close_checkpointer()
 
-    # 使用 Postgres Store 时打开
-    # await close_postgres_store()
+    # 关闭 Store
+    await close_store()
 
     # 关闭链路追踪，导出未处理完的 span
     # 如使用 langfuse 或自己的 TracerProvider，这里换掉

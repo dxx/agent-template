@@ -5,7 +5,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from config.constants import PROJECT_ROOT
-from config.types import AppEnv, ModelProvider
+from config.types import AppEnv, ModelProvider, MemoryBackend
 
 _app_env = os.getenv("APP_ENV")
 
@@ -30,10 +30,10 @@ class Settings(BaseSettings):
     log_format_type: str = Field(default="text", validation_alias="LOG_FORMAT_TYPE")
     log_file: str = Field(default="logs/app.log", validation_alias="LOG_FILE")
 
-    openapi_url: str = Field(default="/openapi.json", validation_alias="OPENAPI_URL")
-
-    cors_allow_origins: list[str] = Field(default=[], validation_alias="CORS_ALLOW_ORIGINS")
+    cors_allow_origins: list[str] = Field(default_factory=list, validation_alias="CORS_ALLOW_ORIGINS")
     cors_allow_credentials: bool = Field(default=False, validation_alias="CORS_ALLOW_CREDENTIALS")
+
+    openapi_url: str = Field(default="/openapi.json", validation_alias="OPENAPI_URL")
 
     openai_provider: ModelProvider = Field(validation_alias="OPENAI_PROVIDER")
     openai_base_url: str = Field(validation_alias="OPENAI_BASE_URL")
@@ -43,7 +43,10 @@ class Settings(BaseSettings):
         default=0.7, validation_alias="OPENAI_TEMPERATURE"
     )
 
-    postgres_memory_conn_str: str = Field(validation_alias="POSTGRES_MEMORY_CONN_STR")
+    # 生产环境使用非内存的记忆后端，如 postgres
+    memory_backend: MemoryBackend = Field(default="memory", validation_alias="MEMORY_BACKEND")
+
+    postgres_memory_conn_str: str = Field(default="", validation_alias="POSTGRES_MEMORY_CONN_STR")
 
     model_config = SettingsConfigDict(
         env_file=[PROJECT_ROOT / ".env", PROJECT_ROOT / f".env.{_app_env}"],
