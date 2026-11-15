@@ -1,5 +1,42 @@
 # 更新日志
 
+## 2026-11-15
+
+### 新增
+
+- 新增 `MEMORY_BACKEND` 配置，支持 `memory` 和 `postgres` 两种记忆存储后端，取值非法时应用启动抛出 `ValidationError`。([4ff7d5f](https://github.com/dxx/agent-template/commit/4ff7d5fa9a0e893ca40fbebc83ebe0943a01fb15))
+- 新增 `init_checkpointer`、`close_checkpointer`、`init_store`、`close_store`，由 `MEMORY_BACKEND` 决定是否初始化 Postgres 连接池。([4ff7d5f](https://github.com/dxx/agent-template/commit/4ff7d5fa9a0e893ca40fbebc83ebe0943a01fb15))
+- 环境配置文件补充 `MEMORY_BACKEND` 说明。([36d40f1](https://github.com/dxx/agent-template/commit/36d40f15b40fa54670adc84968f288a254fcb9ec))
+
+### 变更
+
+- `src/agent/memory/entry.py` 更名为 `src/agent/memory/accessor.py`，checkpointer 和 store 的获取统一按 `MEMORY_BACKEND` 分发。([4ff7d5f](https://github.com/dxx/agent-template/commit/4ff7d5fa9a0e893ca40fbebc83ebe0943a01fb15))
+- `POSTGRES_MEMORY_CONN_STR` 改为可选配置，仅在 `MEMORY_BACKEND=postgres` 时需要提供。([4ff7d5f](https://github.com/dxx/agent-template/commit/4ff7d5fa9a0e893ca40fbebc83ebe0943a01fb15))
+- `src/utils/__init__.py` 不再导出子模块，改为直接导入具体模块，避免隐式加载依赖。([97e97e9](https://github.com/dxx/agent-template/commit/97e97e9e8062517523801e86052a1bfafed7365d))
+
+## 2026-11-14
+
+### 新增
+
+- 新增 OpenTelemetry 链路追踪模块（`src/monitor/tracing.py`），提供 `init_tracing`、`close_tracing`、`get_current_trace_id`、`build_trace_header` 和 `TracingMiddleware`，支持上游 trace 上下文提取和响应头回写。([d8aba5e](https://github.com/dxx/agent-template/commit/d8aba5eddbe7ce350f2f3308fc4adcccc58d8ec8), [bc4afb4](https://github.com/dxx/agent-template/commit/bc4afb404498215867e2847f7c0870f7b90df8f9))
+- 日志自动注入 `trace_id` 字段，便于按链路检索日志。([d8aba5e](https://github.com/dxx/agent-template/commit/d8aba5eddbe7ce350f2f3308fc4adcccc58d8ec8))
+- TracerProvider 增加资源属性，标识服务名、服务版本和部署环境。([bc4afb4](https://github.com/dxx/agent-template/commit/bc4afb404498215867e2847f7c0870f7b90df8f9))
+
+### 变更
+
+- 日志格式新增毫秒级时间戳、源码位置（相对路径:行号），文件日志支持绝对路径。([82ec693](https://github.com/dxx/agent-template/commit/82ec6936776964dd65ffa1d37b3b65ce0293fe7c))
+- 应用关闭时关闭 TracerProvider，导出未处理完的 span。([bc4afb4](https://github.com/dxx/agent-template/commit/bc4afb404498215867e2847f7c0870f7b90df8f9))
+
+### 依赖
+
+- 新增 `opentelemetry-api`、`opentelemetry-sdk` 依赖。([9779b16](https://github.com/dxx/agent-template/commit/9779b163a1188a69f4e26a87303daa362915c125))
+
+## 2026-11-11
+
+### 变更
+
+- 优化系统时间提示词，明确时间基准的权威性。([ac2d3d2](https://github.com/dxx/agent-template/commit/ac2d3d2b766f56fa1e8731ff582321cbee739511), [6586879](https://github.com/dxx/agent-template/commit/65868796034741b2fc13315eff84d730017c943e))
+
 ## 2026-11-06
 
 ### 新增
