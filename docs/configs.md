@@ -1,6 +1,6 @@
 # 配置说明
 
-项目使用 `pydantic-settings` 管理配置。配置定义位于 `src/config/settings.py`，类型定义位于 `src/config/types.py`，示例配置位于项目根目录 `.env.example`。
+项目使用 `pydantic-settings` 管理配置。配置定义位于 `src/config/settings.py`，类型定义位于 `src/config/types.py`，项目路径常量位于 `src/config/constants.py`，示例配置位于项目根目录 `.env.example`。
 
 ## 配置文件
 
@@ -21,18 +21,16 @@
 
 可增加额外的环境配置，配置文件名格式: `.env.环境名称`，然后在 `src/config/settings.py` 中增加对应的代码。
 
-配置文件路径会从 `src/config/settings.py` 向上查找到项目根目录：
+配置文件路径会从 `src/config/constants.py` 中获取：
 
 ```python
-path = Path(__file__).resolve().parent.parent.parent
-env_path = path.joinpath(f".env.{_app_env}")
-default_env_path = path.joinpath(".env")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ```
 
 `Settings` 会按以下顺序加载 env 文件：
 
 ```python
-env_file=[default_env_path, env_path]
+env_file=[PROJECT_ROOT / ".env", PROJECT_ROOT / f".env.{_app_env}"]
 ```
 
 因此通常可以把公共配置放在 `.env`，把不同环境的覆盖配置放在 `.env.dev` 或 `.env.prod`。
@@ -77,7 +75,8 @@ OPENAI_API_KEY=your-api-key-here
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_TEMPERATURE=0.7
 
-POSTGRES_MEMORY_CONN_STR=postgresql://用户名:密码@IP:PORT/数据库名
+MEMORY_BACKEND=memory
+POSTGRES_MEMORY_CONN_STR=
 ```
 
 ## 配置读取
@@ -257,17 +256,30 @@ model = create_chat_model(
 }
 ```
 
-## Postgres 记忆配置
+## 记忆配置
 
 | 环境变量 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `POSTGRES_MEMORY_CONN_STR` | `str` | 无 | Postgres 连接字符串，用于 checkpointer 和 store。 |
+| `MEMORY_BACKEND` | `MemoryBackend` | `memory` | 记忆存储后端，支持 `memory`、`postgres`。 |
+| `POSTGRES_MEMORY_CONN_STR` | `str` | `""` | Postgres 连接字符串，仅当 `MEMORY_BACKEND=postgres` 时使用。 |
+
+`MEMORY_BACKEND` 的可选值：
+
+| 值 | 说明 |
+| --- | --- |
+| `memory` | 内存存储（`InMemorySaver` 和 `InMemoryStore`），进程重启后状态丢失，适合本地开发和测试。 |
+| `postgres` | Postgres 存储，状态持久化，适合生产环境。 |
 
 示例：
 
 ```env
+MEMORY_BACKEND=postgres
 POSTGRES_MEMORY_CONN_STR=postgresql://user:password@127.0.0.1:5432/agent
 ```
+
+切换后端无需改动代码，`src/agent/memory/accessor.py` 会根据配置自动选择对应的 checkpointer 和 store，`src/web/server.py` 的生命周期函数也会按需初始化和关闭 Postgres 连接池。
+
+`MEMORY_BACKEND` 取值定义在 `src/config/types.py` 的 `MemoryBackend`，取值不在上表中时，`Settings` 初始化会失败，应用启动即抛出 `ValidationError`。
 
 ## 类型写法
 
@@ -303,9 +315,10 @@ OPENAI_TEMPERATURE=0.7
 | `OPENAI_BASE_URL` | 模型 API 地址。 |
 | `OPENAI_API_KEY` | 模型 API Key。 |
 | `OPENAI_MODEL` | 模型名称。 |
-| `POSTGRES_MEMORY_CONN_STR` | Postgres 记忆连接字符串。 |
 
 如果缺少这些配置，`Settings` 初始化时会校验失败。
+
+`POSTGRES_MEMORY_CONN_STR` 现在有默认值，只有在 `MEMORY_BACKEND=postgres` 时才需要配置。
 
 ## 最小配置示例
 
@@ -316,8 +329,6 @@ OPENAI_PROVIDER=bailian
 OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 OPENAI_API_KEY=your-api-key-here
 OPENAI_MODEL=qwen-plus
-
-POSTGRES_MEMORY_CONN_STR=postgresql://user:password@127.0.0.1:5432/agent
 ```
 
 ## 注意事项
@@ -329,3 +340,4 @@ POSTGRES_MEMORY_CONN_STR=postgresql://user:password@127.0.0.1:5432/agent
 - `get_settings()` 有缓存，运行时修改环境变量后需要调用 `reload_settings()` 才能重新读取
 - `OPENAI_PROVIDER` 会影响不同模型提供商的额外请求参数
 - `OPENAI_PROVIDER` 取值非法时，应用启动会失败，请检查配置是否拼写错误
+- `MEMORY_BACKEND` 决定记忆存储后端，取值非法时应用启动会失败

@@ -18,7 +18,9 @@ agent-template/
 ├── src/
 │   ├── main.py                 # 应用入口
 │   ├── config/                 # 配置管理
-│   │   └── settings.py         # Pydantic Settings
+│   │   ├── settings.py         # Pydantic Settings
+│   │   ├── types.py            # 配置类型定义
+│   │   └── constants.py        # 项目路径常量
 │   ├── agent/                  # Agent 核心模块
 │   │   ├── subagents/          # 子代理模块
 │   │   │   ├── main.py         # 主 Agent 创建函数
@@ -54,7 +56,7 @@ agent-template/
 │   │   │       ├── tool_error_handling.py # 工具调用错误处理
 │   │   │       └── mcp_client.py          # MCP Client 中间件
 │   │   ├── memory/             # 状态管理
-│   │   │   ├── entry.py        # Checkpointer/Store 入口
+│   │   │   ├── accessor.py     # Checkpointer/Store 入口
 │   │   │   ├── state.py        # Agent 状态定义
 │   │   │   ├── router_state.py # 路由代理状态定义
 │   │   │   ├── context.py      # Agent 上下文定义
@@ -92,6 +94,8 @@ agent-template/
 │   │   └── chat.py             # 对话会话管理
 │   ├── log/                    # 日志模块
 │   │   └── log.py
+│   ├── monitor/                # 链路追踪模块
+│   │   └── tracing.py          # OpenTelemetry 追踪
 │   ├── utils/                  # 工具函数
 │   │   ├── http_client.py
 │   │   └── json_util.py
@@ -124,15 +128,15 @@ agent-template/
 **路由 Agent** - 通过 `create_router_agent()` 创建（位于 `router/agent.py`），使用 `RouteAgentMiddleware` 注册 `route` 工具。主 Agent 调用该工具后，内部 `StateGraph` 会先根据用户输入选择一个或多个路由任务代理，再并发调用对应代理并合并结果。
 
 **状态与持久化** (`agent/memory/`):
-- `entry.py`: Checkpointer 和 Store 的统一入口
-  - `get_checkpointer()`: 获取当前 checkpointer（默认内存存储）
-  - `get_store()`: 获取当前 store（默认内存存储）
+- `accessor.py`: Checkpointer 和 Store 的统一入口
+  - `get_checkpointer()`: 获取当前 checkpointer，按 `MEMORY_BACKEND` 返回 Postgres 或内存实现
+  - `get_store()`: 获取当前 store，按 `MEMORY_BACKEND` 返回 Postgres 或内存实现
+  - `init_checkpointer()` / `close_checkpointer()`: 按需初始化和关闭 Postgres Checkpointer 连接池
+  - `init_store()` / `close_store()`: 按需初始化和关闭 Postgres Store 连接池
 - `AppAgentContext`: 用户上下文，包含 `user_id`、`agents`（指定的任务代理，为空时由路由模型自动选择）
 - `AppAgentState`: Agent 状态，继承自 `AgentState`，包含 `sub_agent_calls` 记录调用的子代理
 - `RouterState`: 路由代理状态，包含 `query`、`target_agents`、`routers`、`router`、`results` 和 `final_result`
-- `init_postgres_checkpointer()` / `close_postgres_checkpointer()`: 初始化和关闭 Checkpointer 连接池
-- `init_postgres_store()` / `close_postgres_store()`: 初始化和关闭 Store 连接池
-- 默认使用内存存储 (`InMemorySaver` 和 `InMemoryStore`)，生产环境可切换为 PostgreSQL
+- 默认使用内存存储 (`InMemorySaver` 和 `InMemoryStore`)，通过 `MEMORY_BACKEND=postgres` 切换为 PostgreSQL
 
 **中间件系统**:
 
@@ -189,9 +193,12 @@ agent-template/
 - `DirectorySkillLoader`: 从本地目录加载技能
 - `RemoteSkillLoader`: 从远程加载技能
 
-**状态管理** (`memory/`):
-- `AppAgentState`: Agent 运行状态，包含消息历史和子代理调用记录
-- `AppAgentContext`: Agent 运行时上下文，包含用户信息
+**链路追踪** (`monitor/`):
+- `init_tracing()` / `close_tracing()`: 初始化和关闭全局 TracerProvider，导出未处理完的 span
+- `get_current_trace_id()`: 获取当前上下文中的 trace id，无有效 span 时返回 `None`
+- `build_trace_header(*trace_keys)`: 构造下游请求头，包含标准 `traceparent` 和自定义追踪字段
+- `TracingMiddleware`: 提取上游追踪上下文创建服务端 span，并把 trace id 写入响应头 `otel-trace-id`
+- 日志会自动注入 `trace_id` 字段，便于按链路检索日志
 
 ### Web 模块 (`src/web/`)
 
@@ -199,7 +206,7 @@ agent-template/
 - 基于 FastAPI 的 REST 服务
 - 全局异常处理（HTTPException、RequestValidationError、Exception）
 - 认证中间件
-- 生命周期管理（Postgres 连接初始化/关闭）
+- 生命周期管理（按 `MEMORY_BACKEND` 初始化/关闭 Postgres 连接）
 
 **路由** (`api/`):
 
@@ -248,7 +255,8 @@ agent-template/
 | `OPENAI_MODEL` | 模型名称 | - (必填) |
 | `OPENAI_TEMPERATURE` | 温度参数 | 0.7 |
 | `OPENAPI_URL` | Swagger 文档路径 (设为 "" 禁用) | /openapi.json |
-| `POSTGRES_MEMORY_CONN_STR` | Postgres 连接字符串（用于 checkpointer 和 store） | - (必填) |
+| `MEMORY_BACKEND` | 记忆存储后端，可选：memory、postgres，取值非法时启动报错 | memory |
+| `POSTGRES_MEMORY_CONN_STR` | Postgres 连接字符串（仅当 MEMORY_BACKEND=postgres 时需要） | 空 |
 
 
 ## 对话流程
