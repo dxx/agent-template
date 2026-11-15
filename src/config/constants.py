@@ -1,4 +1,4 @@
-"""项目公用常量"""
+"""项目常量"""
 
 from pathlib import Path
 

@@ -4,7 +4,7 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from common.constants import PROJECT_ROOT
+from config.constants import PROJECT_ROOT
 from config.types import AppEnv, ModelProvider
 
 _app_env = os.getenv("APP_ENV")

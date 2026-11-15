@@ -6,8 +6,8 @@ from pathlib import Path
 
 from pythonjsonlogger import json
 
-from common.constants import PROJECT_ROOT
 from config import Settings, get_settings
+from config.constants import PROJECT_ROOT
 from monitor import get_current_trace_id
 
 settings = get_settings()
