@@ -1,17 +1,16 @@
 import logging
 import sys
 from datetime import datetime
-from pathlib import Path
-from pythonjsonlogger import json
 from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
 
-from config import get_settings, Settings
+from pythonjsonlogger import json
+
+from common.constants import PROJECT_ROOT
+from config import Settings, get_settings
 from monitor import get_current_trace_id
 
 settings = get_settings()
-
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
-"""项目的根目录"""
 
 # 定义重命名规则：{ "原字段名": "新字段名" }
 _rename_fields = {
@@ -34,7 +33,7 @@ class _AppDefaultFilter(logging.Filter):
             f".{int(record.msecs):03d}"
         record.func_name = record.funcName
         # Remove project path
-        relative_pathname = record.pathname.removeprefix(str(_PROJECT_ROOT) + "/")
+        relative_pathname = record.pathname.removeprefix(str(PROJECT_ROOT) + "/")
         # pathname:no
         record.source = f"{relative_pathname}:{record.lineno}"
         return True

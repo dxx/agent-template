@@ -1,9 +1,10 @@
 import os
 from functools import lru_cache
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
-from pathlib import Path
 
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from common.constants import PROJECT_ROOT
 from config.types import AppEnv, ModelProvider
 
 _app_env = os.getenv("APP_ENV")
@@ -15,10 +16,7 @@ if not _app_env:
 _app_env = _app_env.strip()
 
 if _app_env not in (item.value for item in AppEnv):
-    raise ValueError(f"APP_ENV is incorrect")
-
-# 从当前模块往上找到 src，和 src 同级别，.env 文件和 src 目录同级
-_project_root = Path(__file__).resolve().parent.parent.parent
+    raise ValueError("APP_ENV is incorrect")
 
 
 class Settings(BaseSettings):
@@ -48,7 +46,7 @@ class Settings(BaseSettings):
     postgres_memory_conn_str: str = Field(validation_alias="POSTGRES_MEMORY_CONN_STR")
 
     model_config = SettingsConfigDict(
-        env_file=[_project_root / ".env", _project_root / f".env.{_app_env}"],
+        env_file=[PROJECT_ROOT / ".env", PROJECT_ROOT / f".env.{_app_env}"],
         env_file_encoding="utf-8",
         extra="ignore",
     )
