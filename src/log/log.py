@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
@@ -33,7 +34,7 @@ class _AppDefaultFilter(logging.Filter):
             f".{int(record.msecs):03d}"
         record.func_name = record.funcName
         # Remove project path
-        relative_pathname = record.pathname.removeprefix(str(PROJECT_ROOT) + "/")
+        relative_pathname = record.pathname.removeprefix(str(PROJECT_ROOT) + os.sep)
         # pathname:no
         record.source = f"{relative_pathname}:{record.lineno}"
         return True
