@@ -7,6 +7,7 @@ from agent.memory.namespace import ns
 from agent.middleware.message_record import MessageRecord
 from session import format_thread_id, generate_chat_id
 from web.schemas import Message, MessageResponse
+from web.service.title_service import generate_chat_title
 from exception import SystemException
 
 
@@ -40,15 +41,23 @@ async def is_chat_id_exists(user_id: str, chat_id: str) -> bool:
     return chat_id in user_chat_ids
 
 
-async def get_chat_message_list(user_id: str, chat_id: str) -> list[Message]:
-    """获取指定对话的消息列表（转换为 Message schema）"""
-    raw_messages = await get_message_record_middleware().get_history(user_id, chat_id)
+async def get_chat_message_list(user_id: str, chat_id: str) -> tuple[str | None, list[Message]]:
+    """获取指定对话的标题与消息列表"""
+    record = await get_message_record_middleware().get_history(user_id, chat_id)
     messages = []
-    for msg in raw_messages:
+    for msg in record["messages"]:
         converted = _convert_to_message_record(msg)
         if converted:
             messages.append(converted)
-    return messages
+    return record.get("title"), messages
+
+
+async def get_chat_messages(user_id: str, chat_id: str) -> MessageResponse:
+    """获取指定对话的消息详情（标题 + 消息列表）；chat_id 未登记时返回空消息列表。"""
+    if not await is_chat_id_exists(user_id, chat_id):
+        return MessageResponse(chat_id=chat_id, title=None, messages=[])
+    title, messages = await get_chat_message_list(user_id, chat_id)
+    return MessageResponse(chat_id=chat_id, title=title, messages=messages)
 
 
 async def get_all_chat_messages(user_id: str) -> list[MessageResponse]:
@@ -57,10 +66,25 @@ async def get_all_chat_messages(user_id: str) -> list[MessageResponse]:
     all_responses = []
 
     for chat_id in chat_ids:
-        messages = await get_chat_message_list(user_id, chat_id)
-        all_responses.append(MessageResponse(chat_id=chat_id, messages=messages))
+        title, messages = await get_chat_message_list(user_id, chat_id)
+        all_responses.append(
+            MessageResponse(chat_id=chat_id, title=title, messages=messages)
+        )
 
     return all_responses
+
+
+async def generate_title(
+    user_id: str, content: str, chat_id: str | None = None
+) -> str:
+    """生成会话标题；传入 chat_id 时，生成成功后写入该对话的标题。
+
+    chat_id 必须是该用户已登记的对话，否则不写入（避免为不存在的对话创建记录）。
+    """
+    title = await generate_chat_title(content)
+    if chat_id and await is_chat_id_exists(user_id, chat_id):
+        await get_message_record_middleware().set_title(user_id, chat_id, title)
+    return title
 
 
 async def delete_chat_messages(user_id: str, chat_id: str) -> bool:
@@ -74,30 +98,32 @@ async def delete_chat_messages(user_id: str, chat_id: str) -> bool:
 
     # 从用户的 chat_ids 列表中移除该 chat_id
     key = user_id
-    existing = await get_store().aget(_NAMESPACE_CHAT_ID, key)
+    store = get_store()
+    existing = await store.aget(_NAMESPACE_CHAT_ID, key)
     if existing and existing.value:
         chat_ids = existing.value.get("chat_ids", [])
         if chat_id in chat_ids:
             chat_ids.remove(chat_id)
-            await get_store().aput(_NAMESPACE_CHAT_ID, key, {"chat_ids": chat_ids})
+            await store.aput(_NAMESPACE_CHAT_ID, key, {"chat_ids": chat_ids})
             return True
     return False
 
 
 async def delete_all_chat_messages(user_id: str) -> bool:
-    """删除用户所有对话的消息"""
+    """删除用户所有对话的消息（含消息记录与检查点）"""
     chat_ids = await get_user_chat_ids(user_id)
 
     checkpointer = get_checkpointer()
-
-    # 删除每个对话的消息
+    middleware = get_message_record_middleware()
     for chat_id in chat_ids:
+        # 清理消息记录（含标题）
+        await middleware.clear_history(user_id, chat_id)
+        # 清理检查点
         thread_id = format_thread_id(user_id, chat_id)
         await checkpointer.adelete_thread(thread_id)
 
     # 删除用户的 chat_ids 记录
-    key = user_id
-    await get_store().adelete(_NAMESPACE_CHAT_ID, key)
+    await get_store().adelete(_NAMESPACE_CHAT_ID, user_id)
 
     return True
 

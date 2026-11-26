@@ -17,7 +17,12 @@ from web.schemas.chat import (
     Decision,
     DecisionItem,
 )
-from web.schemas.message import Message, MessageResponse
+from web.schemas.message import (
+    Message,
+    MessageResponse,
+    GenerateTitleRequest,
+    GenerateTitleResponse,
+)
 from web.schemas.state import AppState
 
 __all__ = [
@@ -35,6 +40,8 @@ __all__ = [
     "DecisionItem",
     "Message",
     "MessageResponse",
+    "GenerateTitleRequest",
+    "GenerateTitleResponse",
     "CODE_SUCCESS",
     "CODE_FAILURE",
     "CODE_VALIDATION_ERROR",

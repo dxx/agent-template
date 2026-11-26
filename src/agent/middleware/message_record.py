@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 from enum import Enum
-from typing import Any, TypedDict, cast, override
+from typing import Any, NotRequired, TypedDict, cast, override
 from uuid import uuid4
 from langchain.agents.middleware import AgentMiddleware
 from langchain.agents.middleware.types import (
@@ -31,6 +31,7 @@ class ChatMessageRecord(TypedDict):
     user_id: str
     chat_id: str
     messages: list[MessageRecord]
+    title: NotRequired[str]
 
 
 class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
@@ -51,6 +52,7 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
     - user_id: str, 用户ID
     - chat_id: str, 聊天ID
     - messages: list[MessageRecord], 消息列表
+    - title: NotRequired[str], 消息标题
 
     MessageRecord 结构：
     - message_id: str, UUID
@@ -308,19 +310,25 @@ class MessageRecordMiddleware(AgentMiddleware[StateT, ContextT, Any]):
             return messages
         return messages[-keep:]
 
-    async def get_history(self, user_id: str, chat_id: str) -> list[MessageRecord]:
-        """获取指定用户和聊天的消息历史
+    async def get_history(self, user_id: str, chat_id: str) -> ChatMessageRecord:
+        """获取指定用户和聊天的完整记录（含标题）。
 
         Args:
             user_id: 用户ID
             chat_id: 聊天ID
 
         Returns:
-            list[MessageRecord]: 消息列表
+            ChatMessageRecord: 消息记录（`messages` + 可选 `title`）
         """
         key = self._format_key(user_id, chat_id)
+        return await self._get_chat_record(key)
+
+    async def set_title(self, user_id: str, chat_id: str, title: str) -> None:
+        """设置指定对话的标题（覆盖写入）。"""
+        key = self._format_key(user_id, chat_id)
         record = await self._get_chat_record(key)
-        return record["messages"]
+        record["title"] = title
+        await self.store.aput(self.namespace, key, dict(record))
 
     async def clear_history(self, user_id: str, chat_id: str) -> None:
         """清除指定用户和聊天的所有消息历史
