@@ -5,7 +5,7 @@ POST http://localhost:8000/message/chat/create
 user-token: user_123
 
 ### 获取指定对话的消息列表
-GET http://localhost:8000/message/chat/chat_4c279fe2-fb7a-40bf-b70c-9cf7604d0a12
+GET http://localhost:8000/message/chat/chat_19125996-eb71-4989-9f2b-16c06485aaf1
 user-token: user_123
 
 ### 获取用户所有对话的消息列表
@@ -13,9 +13,20 @@ GET http://localhost:8000/message/all
 user-token: user_123
 
 ### 删除指定对话的所有消息
-DELETE http://localhost:8000/message/chat/chat_893aa37f-f540-4252-a741-12800427a749
+DELETE http://localhost:8000/message/chat/chat_19125996-eb71-4989-9f2b-16c06485aaf1
 user-token: user_123
 
 ### 删除用户所有对话的消息
 DELETE http://localhost:8000/message/all
 user-token: user_123
+
+### 生成对话标题
+POST http://localhost:8000/message/chat/generate-title
+Content-Type: application/json
+user-token: user_123
+
+{
+  "chat_id": "chat_19125996-eb71-4989-9f2b-16c06485aaf1",
+  "content": "哈罗，你好啊"
+}
+
