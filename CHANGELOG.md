@@ -1,5 +1,25 @@
 # 更新日志
 
+## 2026-11-26
+
+### 新增
+
+- 新增会话标题生成能力。([f365782](https://github.com/dxx/agent-template/commit/f36578263f056069c500a75913009a3ef9f7693f))
+- 新增 `POST /message/chat/generate-title` 接口，支持传入 `chat_id` 在生成成功后写入该对话标题，不传则只返回标题。([f365782](https://github.com/dxx/agent-template/commit/f36578263f056069c500a75913009a3ef9f7693f))
+- `MessageResponse` 新增 `title` 字段，未生成过标题时为 `null`；新增 `GenerateTitleRequest`、`GenerateTitleResponse` 两个模型。([f365782](https://github.com/dxx/agent-template/commit/f36578263f056069c500a75913009a3ef9f7693f))
+- `MessageRecordMiddleware` 新增 `set_title` 方法，`get_history` 返回值由消息列表改为包含 `messages` 与可选 `title` 的 `ChatMessageRecord`。([f365782](https://github.com/dxx/agent-template/commit/f36578263f056069c500a75913009a3ef9f7693f))
+
+### 变更
+
+- `GET /message/chat/{chat_id}` 接口返回结构由消息列表调整为 `MessageResponse`（含 `chat_id`、`title`、`messages`）；`chat_id` 未在当前用户的对话列表中登记时返回空 `messages` 列表。([f365782](https://github.com/dxx/agent-template/commit/f36578263f056069c500a75913009a3ef9f7693f))
+- `DELETE /message/chat/{chat_id}` 和 `DELETE /message/all` 接口在删除消息记录的同时删除对应检查点（checkpoint）。([f365782](https://github.com/dxx/agent-template/commit/f36578263f056069c500a75913009a3ef9f7693f))
+
+## 2026-11-16
+
+### 变更
+
+- 修复 Windows 下日志源码路径裁剪失效的问题，改用 `os.sep` 拼接项目根路径。([6db2a23](https://github.com/dxx/agent-template/commit/6db2a23030c807ae39f00c63da12ff34e73d55f9))
+
 ## 2026-11-15
 
 ### 新增
